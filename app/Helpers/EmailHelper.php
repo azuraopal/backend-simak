@@ -23,6 +23,7 @@ class EmailHelper
             $mail->SMTPSecure = env('MAIL_ENCRYPTION');
             $mail->Port = env('MAIL_PORT');
 
+
             $mail->setFrom(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
             $mail->addAddress($email, $nama_lengkap);
             $mail->isHTML(true);

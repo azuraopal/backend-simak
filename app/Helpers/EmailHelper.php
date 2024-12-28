@@ -13,9 +13,6 @@ class EmailHelper
         require_once base_path('vendor/autoload.php');
 
         $mail = new PHPMailer(true);
-        $mail->Debugoutput = function ($str, $level) {
-            Log::info("SMTP Debug: $str");
-        };
 
         try {
             $mail->isSMTP();

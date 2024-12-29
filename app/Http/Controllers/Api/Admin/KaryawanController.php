@@ -24,7 +24,7 @@ class KaryawanController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'karyawan_id' => 'required|exists:users,id',
+            'users_id' => 'required|exists:users,id',
             'nama' => 'required|string|max:100',
             'tanggal_lahir' => 'required|date',
             'pekerjaan' => 'required|string|max:255',
@@ -40,7 +40,7 @@ class KaryawanController extends Controller
             ], 422);
         }
 
-        $user = User::find($request->karyawan_id);
+        $user = User::find($request->users_id);
         if (!$user || $user->role !== UserRole::Karyawan) {
             return response()->json([
                 'status' => false,
@@ -48,7 +48,7 @@ class KaryawanController extends Controller
             ], 422);
         }
 
-        if (Karyawan::where('karyawan_id', $request->karyawan_id)->exists()) {
+        if (Karyawan::where('users_id', $request->users_id)->exists()) {
             return response()->json([
                 'status' => false,
                 'message' => 'Karyawan information already exists'
@@ -58,7 +58,7 @@ class KaryawanController extends Controller
         DB::beginTransaction();
         try {
             $karyawan = Karyawan::create([
-                'karyawan_id' => $request->karyawan_id,
+                'users_id' => $request->users_id,
                 'nama' => $request->nama,
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'pekerjaan' => $request->pekerjaan,
@@ -119,7 +119,7 @@ class KaryawanController extends Controller
             'pekerjaan' => 'string|max:255',
             'alamat' => 'string',
             'telepon' => 'string|max:20',
-            'email' => "email|unique:users,email,{$karyawan->karyawan_id}"
+            'email' => "email|unique:users,email,{$karyawan->users_id}"
         ]);
 
         if ($validator->fails()) {

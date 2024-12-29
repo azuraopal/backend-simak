@@ -44,7 +44,7 @@ class User extends Authenticatable
 
     public function karyawan()
     {
-        return $this->hasOne(Karyawan::class, 'karyawan_id');
+        return $this->hasOne(Karyawan::class, 'users_id');
     }
 
     public function isAdmin(): bool

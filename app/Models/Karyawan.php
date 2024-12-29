@@ -12,7 +12,7 @@ class Karyawan extends Model
 
     protected $table = 'karyawan';
     protected $fillable = [
-        'karyawan_id',
+        'users_id',
         'nama',
         'tanggal_lahir',
         'pekerjaan',
@@ -28,7 +28,7 @@ class Karyawan extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'karyawan_id');
+        return $this->belongsTo(User::class, 'users_id');
     }
     public function getTanggalLahirAttribute($value)
     {

@@ -40,7 +40,6 @@ class UserController extends Controller
             $defaultFotoProfile = 'default.jpg';
             $password = Str::random(8);
 
-            // Kirim email terlebih dahulu
             if ($request->role === UserRole::Karyawan->value) {
                 $emailSent = EmailHelper::sendUserCredentials(
                     $request->email,

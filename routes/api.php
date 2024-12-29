@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\UpahController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\KaryawanController;
@@ -8,11 +9,14 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/users/upload-photo', [UserController::class, 'uploadPhoto']);
     Route::post('/users/change-password', [UserController::class, 'changePassword']);
+    Route::get('/upah', [UpahController::class, 'index']);
+    Route::get('/upah/{id}', [UpahController::class, 'show']);
 });
 
 
@@ -36,6 +40,13 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::put('/{id}', [KaryawanController::class, 'update'])->name('karyawan.update');
         Route::delete('/{id}', [KaryawanController::class, 'destroy'])->name('karyawan.destroy');
         Route::get('/search', [KaryawanController::class, 'search'])->name('karyawan.search');
+    });
+
+    //Upah Managemet
+    Route::prefix('upah')->group(function () {
+        Route::post('/', [UpahController::class, 'store'])->name('upah.store');
+        Route::put('/{id}', [UpahController::class, 'update'])->name('upah.update');
+        Route::delete('/{id}', [UpahController::class, 'destroy'])->name('upah.destroy');
     });
 
 });

@@ -17,6 +17,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users/change-password', [UserController::class, 'changePassword']);
     Route::get('/upah', [UpahController::class, 'index']);
     Route::get('/upah/{id}', [UpahController::class, 'show']);
+    Route::get('upah/week/{weekNumber}', [UpahController::class, 'getByWeek']);
 });
 
 

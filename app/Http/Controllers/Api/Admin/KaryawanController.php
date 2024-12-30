@@ -30,7 +30,6 @@ class KaryawanController extends Controller
             'pekerjaan' => 'required|string|max:255',
             'alamat' => 'required|string',
             'telepon' => 'required|string|max:20',
-            'email' => 'required|email'
         ]);
 
         if ($validator->fails()) {
@@ -57,6 +56,8 @@ class KaryawanController extends Controller
 
         DB::beginTransaction();
         try {
+            $user = User::findOrFail($request->users_id);
+
             $karyawan = Karyawan::create([
                 'users_id' => $request->users_id,
                 'nama' => $request->nama,
@@ -64,7 +65,7 @@ class KaryawanController extends Controller
                 'pekerjaan' => $request->pekerjaan,
                 'alamat' => $request->alamat,
                 'telepon' => $request->telepon,
-                'email' => $request->email
+                'email' => $user->email,
             ]);
 
             DB::commit();

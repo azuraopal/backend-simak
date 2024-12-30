@@ -19,7 +19,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'foto_profile'
+        'foto_profile',
+        'email_verified_at'
     ];
 
     public function getFotoProfileUrlAttribute()

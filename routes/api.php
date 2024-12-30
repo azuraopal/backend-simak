@@ -4,12 +4,15 @@ use App\Http\Controllers\Api\Admin\UpahController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\KaryawanController;
+use App\Http\Controllers\Api\Admin\KategoriController;
 use Illuminate\Support\Facades\Route;
 
 
+// Auth Routes
 Route::post('/login', [AuthController::class, 'login']);
 
 
+// Public Routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
@@ -18,6 +21,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/upah', [UpahController::class, 'index']);
     Route::get('/upah/{id}', [UpahController::class, 'show']);
     Route::get('upah/week/{weekNumber}', [UpahController::class, 'getByWeek']);
+    Route::get('/kategori', [KategoriController::class, 'index']);
+    Route::get('/kategori/{id}', [KategoriController::class, 'show']);
 });
 
 
@@ -43,11 +48,18 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::get('/search', [KaryawanController::class, 'search'])->name('karyawan.search');
     });
 
-    //Upah Managemet
+    // Upah Managemet
     Route::prefix('upah')->group(function () {
         Route::post('/', [UpahController::class, 'store'])->name('upah.store');
         Route::put('/{id}', [UpahController::class, 'update'])->name('upah.update');
         Route::delete('/{id}', [UpahController::class, 'destroy'])->name('upah.destroy');
+    });
+
+    // Kategori Managemet
+    Route::prefix('kategori')->group(function () {
+        Route::post('/', [KategoriController::class, 'store'])->name('kategori.store');
+        Route::put('/{id}', [KategoriController::class, 'update'])->name('kategori.update');
+        Route::delete('/{id}', [KategoriController::class, 'destroy'])->name('kategori.destroy');
     });
 
 });

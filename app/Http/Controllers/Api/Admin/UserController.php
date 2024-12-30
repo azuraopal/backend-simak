@@ -55,13 +55,13 @@ class UserController extends Controller
                 }
             }
 
-            // Buat user hanya jika email berhasil terkirim
             $user = User::create([
                 'nama_lengkap' => $request->nama_lengkap,
                 'email' => $request->email,
                 'password' => Hash::make($password),
                 'role' => $request->role,
                 'foto_profile' => $request->foto_profile ?? $defaultFotoProfile,
+                'email_verified_at' => now(),
             ]);
 
             return response()->json([
@@ -84,7 +84,7 @@ class UserController extends Controller
         try {
             $user = User::findOrFail($id);
             return response()->json($user, 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['message' => 'User not found.'], 404);
         }
     }

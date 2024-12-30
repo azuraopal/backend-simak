@@ -100,7 +100,7 @@ class UpahController extends Controller
                         'message' => 'Data karyawan tidak ditemukan'
                     ], 404);
                 }
-                $query->where('id_karyawan', $karyawan->id);
+                $query->where('karyawan_id', $karyawan->id);
             }
 
             $upah = $query->orderBy('periode_mulai', 'desc')->get();
@@ -129,7 +129,7 @@ class UpahController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'id_karyawan' => 'required|exists:karyawan,id',
+            'karyawan_id' => 'required|exists:karyawan,id',
             'total_dikerjakan' => 'required|integer|min:0',
             'total_upah' => 'required|integer|min:0',
             'periode_mulai' => 'required|date'
@@ -144,7 +144,7 @@ class UpahController extends Controller
         }
 
         try {
-            $karyawan = Karyawan::with('user')->find($request->id_karyawan);
+            $karyawan = Karyawan::with('user')->find($request->karyawan_id);
             if (!$karyawan || !$karyawan->user) {
                 return response()->json([
                     'status' => false,
@@ -158,7 +158,7 @@ class UpahController extends Controller
                 $periode['start']
             );
 
-            $existingUpah = Upah::where('id_karyawan', $request->id_karyawan)
+            $existingUpah = Upah::where('karyawan_id', $request->karyawan_id)
                 ->where(function ($query) use ($periode) {
                     $query->whereBetween('periode_mulai', [$periode['start'], $periode['end']])
                         ->orWhereBetween('periode_selesai', [$periode['start'], $periode['end']]);
@@ -211,7 +211,7 @@ class UpahController extends Controller
 
             if (Auth::user()->role !== UserRole::Admin) {
                 $karyawan = Karyawan::where('users_id', Auth::id())->first();
-                if (!$karyawan || $upah->id_karyawan !== $karyawan->id) {
+                if (!$karyawan || $upah->karyawan_id !== $karyawan->id) {
                     return response()->json([
                         'status' => false,
                         'message' => 'Unauthorized access'
@@ -255,7 +255,7 @@ class UpahController extends Controller
                         'message' => 'Data karyawan tidak ditemukan'
                     ], 404);
                 }
-                $query->where('id_karyawan', $karyawan->id);
+                $query->where('karyawan_id', $karyawan->id);
             }
 
             $upah = $query->orderBy('periode_mulai', 'desc')->get();
@@ -284,7 +284,7 @@ class UpahController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'id_karyawan' => 'required|exists:karyawan,id',
+            'karyawan_id' => 'required|exists:karyawan,id',
             'total_dikerjakan' => 'required|integer|min:0',
             'total_upah' => 'required|integer|min:0',
             'periode_mulai' => 'required|date'
@@ -307,7 +307,7 @@ class UpahController extends Controller
                 ], 404);
             }
 
-            $karyawan = Karyawan::with('user')->find($request->id_karyawan);
+            $karyawan = Karyawan::with('user')->find($request->karyawan_id);
             if (!$karyawan || !$karyawan->user) {
                 return response()->json([
                     'status' => false,
@@ -321,7 +321,7 @@ class UpahController extends Controller
                 $periode['start']
             );
 
-            $existingUpah = Upah::where('id_karyawan', $request->id_karyawan)
+            $existingUpah = Upah::where('karyawan_id', $request->karyawan_id)
                 ->where('id', '!=', $id)
                 ->where(function ($query) use ($periode) {
                     $query->whereBetween('periode_mulai', [$periode['start'], $periode['end']])

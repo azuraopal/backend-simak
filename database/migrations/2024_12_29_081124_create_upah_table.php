@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('upah', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_karyawan')->constrained('karyawan')->onDelete('cascade');
+            $table->foreignId('karyawan_id')->constrained('karyawan')->onDelete('cascade');
             $table->integer('minggu_ke');
             $table->integer('total_dikerjakan');
             $table->integer('total_upah');

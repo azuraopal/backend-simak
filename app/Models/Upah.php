@@ -12,7 +12,7 @@ class Upah extends Model
     protected $table = 'upah';
 
     protected $fillable = [
-        'id_karyawan',
+        'karyawan_id',
         'minggu_ke',
         'total_dikerjakan',
         'total_upah',
@@ -27,6 +27,6 @@ class Upah extends Model
 
     public function karyawan()
     {
-        return $this->belongsTo(Karyawan::class, 'id_karyawan');
+        return $this->belongsTo(Karyawan::class, 'karyawan_id');
     }
 }

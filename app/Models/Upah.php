@@ -29,4 +29,17 @@ class Upah extends Model
     {
         return $this->belongsTo(Karyawan::class, 'karyawan_id');
     }
+
+    public function detailPerhitungan()
+    {
+        return $this->hasManyThrough(
+            BarangHarian::class,
+            Karyawan::class,
+            'id',
+            'barang_id',
+            'karyawan_id',
+            'id'
+        )->join('barang', 'barang.id', '=', 'barang_harian.barang_id')
+            ->select('barang_harian.*', 'barang.nama as nama_barang', 'barang.upah as upah_per_kodi');
+    }
 }

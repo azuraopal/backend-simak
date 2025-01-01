@@ -30,6 +30,12 @@ class Karyawan extends Model
     {
         return $this->belongsTo(User::class, 'users_id', 'id');
     }
+    
+    public function upah()
+    {
+        return $this->hasMany(Upah::class, 'karyawan_id');
+    }
+
     public function getTanggalLahirAttribute($value)
     {
         return Carbon::parse($value)->format('d-m-Y');

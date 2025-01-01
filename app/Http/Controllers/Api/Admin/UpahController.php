@@ -21,17 +21,17 @@ class UpahController extends Controller
     public function index()
     {
         try {
-            $query = Upah::with([
+            $upah = Upah::with([
                 'karyawan.user' => function ($query) {
                     $query->select('id', 'nama_lengkap', 'email', 'created_at');
                 },
                 'detailPerhitungan' => function ($query) {
                     $query->select(
                         'barang_harian.*',
-                        'barang.nama as nama_barang',
-                        'barang.upah as upah_per_kodi'
+                        'b.nama as nama_barang',
+                        'b.upah as upah_per_kodi'
                     )
-                        ->join('barang', 'barang.id', '=', 'barang_harian.barang_id');
+                        ->join('barang as b', 'b.id', '=', 'barang_harian.barang_id');
                 }
             ]);
 
@@ -45,10 +45,10 @@ class UpahController extends Controller
                     ], 404);
                 }
 
-                $query->where('karyawan_id', $karyawan->id);
+                $upah->where('karyawan_id', $karyawan->id);
             }
 
-            $upah = $query->orderBy('periode_mulai', 'desc')->get();
+            $upah = $upah->orderBy('periode_mulai', 'desc')->get();
 
             if ($upah->isEmpty()) {
                 return response()->json([
@@ -192,6 +192,48 @@ class UpahController extends Controller
         }
     }
 
+    public function show($id)
+    {
+        try {
+            $upah = Upah::with(['karyawan.user'])->findOrFail($id);
+
+            $detailPerhitungan = $upah->detailPerhitungan()
+                ->whereDate('barang_harian.tanggal', '>=', $upah->periode_mulai)
+                ->whereDate('barang_harian.tanggal', '<=', $upah->periode_selesai)
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'nama_barang' => $item->nama_barang,
+                        'upah_per_kodi' => $item->upah_per_kodi,
+                        'tanggal' => $item->tanggal,
+                        'jumlah_dikerjakan' => $item->jumlah_dikerjakan,
+                        'subtotal' => $item->jumlah_dikerjakan * $item->upah_per_kodi
+                    ];
+                });
+
+            $periode = [
+                'minggu_ke' => $upah->minggu_ke,
+                'tanggal_mulai' => $upah->periode_mulai->format('Y-m-d'),
+                'tanggal_selesai' => $upah->periode_selesai->format('Y-m-d')
+            ];
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Detail upah berhasil diambil',
+                'data' => [
+                    'upah' => $upah,
+                    'detail_perhitungan' => $detailPerhitungan,
+                    'periode' => $periode
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat mengambil detail upah',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
     public function destroy($id)
     {
         try {

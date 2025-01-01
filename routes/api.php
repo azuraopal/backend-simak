@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\BarangController;
 use App\Http\Controllers\Api\Admin\UpahController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\KaryawanController;
 use App\Http\Controllers\Api\Admin\KategoriController;
+use App\Http\Controllers\Api\Admin\BarangHarianController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -23,6 +25,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('upah/week/{weekNumber}', [UpahController::class, 'getByWeek']);
     Route::get('/kategori', [KategoriController::class, 'index']);
     Route::get('/kategori/{id}', [KategoriController::class, 'show']);
+    Route::get('/barang', [BarangController::class, 'index']);
+    Route::get('/barang/{id}', [BarangController::class, 'show']);
+    Route::get('/barang-harian', [BarangHarianController::class, 'index']);
+    Route::get('/barang-harian/{id}', [BarangHarianController::class, 'show']);
 });
 
 
@@ -60,6 +66,20 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::post('/', [KategoriController::class, 'store'])->name('kategori.store');
         Route::put('/{id}', [KategoriController::class, 'update'])->name('kategori.update');
         Route::delete('/{id}', [KategoriController::class, 'destroy'])->name('kategori.destroy');
+    });
+
+    // Barang Managemet
+    Route::prefix('barang')->group(function () {
+        Route::post('/', [BarangController::class, 'store'])->name('barang.store');
+        Route::put('/{id}', [BarangController::class, 'update'])->name('barang.update');
+        Route::delete('/{id}', [BarangController::class, 'destroy'])->name('barang.destroy');
+    });
+
+    // Barang Harian Managemet
+    Route::prefix('barang-harian')->group(function () {
+        Route::post('/', [BarangHarianController::class, 'store'])->name('barang-harian.store');
+        Route::put('/{id}', [BarangHarianController::class, 'update'])->name('barang-harian.update');
+        Route::delete('/{id}', [BarangHarianController::class, 'destroy'])->name('barang-harian.destroy');
     });
 
 });

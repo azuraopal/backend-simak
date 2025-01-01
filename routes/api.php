@@ -1,13 +1,13 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\BarangController;
 use App\Http\Controllers\Api\Admin\UpahController;
 use App\Http\Controllers\Api\Admin\UserController;
-use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\KaryawanController;
 use App\Http\Controllers\Api\Admin\KategoriController;
 use App\Http\Controllers\Api\Admin\BarangHarianController;
-use Illuminate\Support\Facades\Route;
 
 
 // Auth Routes

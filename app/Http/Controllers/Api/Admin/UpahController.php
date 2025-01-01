@@ -5,16 +5,214 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Enums\UserRole;
 use App\Models\Karyawan;
 use App\Models\Upah;
-use App\Models\User;
+use App\Models\BarangHarian;
+use App\Models\Barang;
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class UpahController extends Controller
 {
+
+    public function index()
+    {
+        try {
+            $query = Upah::with([
+                'karyawan.user' => function ($query) {
+                    $query->select('id', 'nama_lengkap', 'email', 'created_at');
+                },
+                'detailPerhitungan' => function ($query) {
+                    $query->select(
+                        'barang_harian.*',
+                        'barang.nama as nama_barang',
+                        'barang.upah as upah_per_kodi'
+                    )
+                        ->join('barang', 'barang.id', '=', 'barang_harian.barang_id');
+                }
+            ]);
+
+            if (Auth::user()->role !== UserRole::Admin) {
+                $karyawan = Karyawan::where('users_id', Auth::id())->first();
+
+                if (!$karyawan) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Data karyawan tidak ditemukan'
+                    ], 404);
+                }
+
+                $query->where('karyawan_id', $karyawan->id);
+            }
+
+            $upah = $query->orderBy('periode_mulai', 'desc')->get();
+
+            if ($upah->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data upah tidak ditemukan',
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Data upah berhasil diambil',
+                'data' => $upah
+            ], 200);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+
+    public function store(Request $request)
+    {
+        if (Auth::user()->role !== UserRole::Admin) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized access'
+            ], 403);
+        }
+
+        try {
+            $validator = Validator::make($request->all(), [
+                'karyawan_id' => [
+                    'required',
+                    'exists:karyawan,id',
+                    function ($attribute, $value, $fail) {
+                        $karyawan = Karyawan::find($value);
+                        if (!$karyawan || !$karyawan->user) {
+                            $fail('Data karyawan tidak lengkap atau tidak valid.');
+                        }
+                    },
+                ],
+                'periode_mulai' => [
+                    'required',
+                    'date',
+                    'date_format:Y-m-d',
+                    function ($attribute, $value, $fail) {
+                        $date = Carbon::parse($value);
+                        if ($date->isWeekend()) {
+                            $fail('Tanggal mulai tidak boleh di akhir pekan.');
+                        }
+                        if ($date->gt(Carbon::now())) {
+                            $fail('Tanggal mulai tidak boleh lebih dari hari ini.');
+                        }
+                    },
+                ]
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validation Error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $karyawan = Karyawan::with('user')->findOrFail($request->karyawan_id);
+
+            $periode = $this->calculatePeriodDates($request->periode_mulai);
+
+            if (!$this->validatePeriod($periode['start'], $periode['end'], $karyawan)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Periode tidak valid untuk karyawan ini'
+                ], 422);
+            }
+
+            $existingUpah = $this->checkExistingUpah($karyawan->id, $periode['start'], $periode['end']);
+            if ($existingUpah) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Sudah ada data upah untuk periode ini'
+                ], 422);
+            }
+
+            $mingguKe = $this->calculateWeekNumber(
+                $karyawan->user->created_at,
+                $periode['start']
+            );
+
+
+            $barangHarian = $this->validateBarangHarian(
+                $karyawan->id,
+                $periode['start'],
+                $periode['end']
+            );
+
+            if (!$barangHarian['status']) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $barangHarian['message']
+                ], 422);
+            }
+
+            $totals = $this->calculateTotals(
+                $karyawan->id,
+                $periode['start'],
+                $periode['end']
+            );
+
+            $upah = Upah::create([
+                'karyawan_id' => $karyawan->id,
+                'minggu_ke' => $mingguKe,
+                'total_dikerjakan' => $totals->total_dikerjakan,
+                'total_upah' => $totals->total_upah,
+                'periode_mulai' => $periode['start'],
+                'periode_selesai' => $periode['end']
+            ]);
+
+
+            $detailPerhitungan = $this->getDetailPerhitungan(
+                $karyawan->id,
+                $periode['start'],
+                $periode['end']
+            );
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Data upah berhasil ditambahkan',
+                'data' => [
+                    'upah' => $upah,
+                    'detail_perhitungan' => $detailPerhitungan,
+                    'periode' => [
+                        'minggu_ke' => $mingguKe,
+                        'tanggal_mulai' => $periode['start'],
+                        'tanggal_selesai' => $periode['end']
+                    ]
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $upah = Upah::findOrFail($id);
+
+            $upah->delete();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Data upah berhasil dihapus'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
     private function calculateWeekNumber($userCreatedAt, $targetDate)
     {
         $startDate = Carbon::parse($userCreatedAt)->startOfDay();
@@ -45,348 +243,109 @@ class UpahController extends Controller
         return $weekCount;
     }
 
+
+
     private function calculatePeriodDates($startDate)
     {
-        $startDate = Carbon::parse($startDate)->startOfDay();
+        $start = Carbon::parse($startDate)->startOfDay();
 
-        while ($startDate->isWeekend()) {
-            $startDate->addDay();
+
+        while ($start->isWeekend()) {
+            $start->addDay();
         }
 
-        $endDate = $startDate->copy();
+        $end = $start->copy();
         $workDays = 0;
 
-        while ($workDays < 4) {
-            $endDate->addDay();
-            if (!$endDate->isWeekend()) {
+        while ($workDays < 5) {
+            if (!$end->isWeekend()) {
                 $workDays++;
+            }
+            if ($workDays < 5) {
+                $end->addDay();
             }
         }
 
         return [
-            'start' => $startDate->format('Y-m-d'),
-            'end' => $endDate->format('Y-m-d')
+            'start' => $start->format('Y-m-d'),
+            'end' => $end->format('Y-m-d')
         ];
     }
 
-    private function getWorkingDays($startDate, $endDate)
+    private function validatePeriod($startDate, $endDate, $karyawan)
     {
-        $period = CarbonPeriod::create($startDate, $endDate);
-        $workingDays = 0;
+        $start = Carbon::parse($startDate);
+        $joinDate = Carbon::parse($karyawan->user->created_at);
 
-        foreach ($period as $date) {
-            if (!$date->isWeekend()) {
-                $workingDays++;
-            }
+
+        if ($start->lt($joinDate)) {
+            return false;
         }
 
-        return $workingDays;
+        return true;
     }
 
-    public function index()
+    private function checkExistingUpah($karyawanId, $startDate, $endDate)
     {
-        try {
-            $query = Upah::with([
-                'karyawan.user' => function ($query) {
-                    $query->select('id', 'nama_lengkap', 'email', 'created_at');
-                }
-            ]);
-
-            if (Auth::user()->role !== UserRole::Admin) {
-                $karyawan = Karyawan::where('users_id', Auth::id())->first();
-                if (!$karyawan) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Data karyawan tidak ditemukan'
-                    ], 404);
-                }
-                $query->where('karyawan_id', $karyawan->id);
-            }
-
-            $upah = $query->orderBy('periode_mulai', 'desc')->get();
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Data upah berhasil diambil',
-                'data' => $upah
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Gagal mengambil data upah',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return Upah::where('karyawan_id', $karyawanId)
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('periode_mulai', [$startDate, $endDate])
+                    ->orWhereBetween('periode_selesai', [$startDate, $endDate]);
+            })->first();
     }
 
-    public function store(Request $request)
+    private function validateBarangHarian($karyawanId, $startDate, $endDate)
     {
-        if (Auth::user()->role !== UserRole::Admin) {
-            return response()->json([
+        $barangHarian = BarangHarian::where('karyawan_id', $karyawanId)
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->count();
+
+        if ($barangHarian === 0) {
+            return [
                 'status' => false,
-                'message' => 'Unauthorized access'
-            ], 403);
+                'message' => 'Tidak ada data barang yang dikerjakan pada periode ini'
+            ];
         }
 
-        $validator = Validator::make($request->all(), [
-            'karyawan_id' => 'required|exists:karyawan,id',
-            'total_dikerjakan' => 'required|integer|min:0',
-            'total_upah' => 'required|integer|min:0',
-            'periode_mulai' => 'required|date'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Validation Error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $karyawan = Karyawan::with('user')->find($request->karyawan_id);
-            if (!$karyawan || !$karyawan->user) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Data karyawan tidak lengkap'
-                ], 404);
-            }
-
-            $periode = $this->calculatePeriodDates($request->periode_mulai);
-            $mingguKe = $this->calculateWeekNumber(
-                $karyawan->user->created_at,
-                $periode['start']
-            );
-
-            $existingUpah = Upah::where('karyawan_id', $request->karyawan_id)
-                ->where(function ($query) use ($periode) {
-                    $query->whereBetween('periode_mulai', [$periode['start'], $periode['end']])
-                        ->orWhereBetween('periode_selesai', [$periode['start'], $periode['end']]);
-                })->first();
-
-            if ($existingUpah) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Sudah ada data upah untuk periode ini'
-                ], 422);
-            }
-
-            $data = array_merge($request->all(), [
-                'minggu_ke' => $mingguKe,
-                'periode_mulai' => $periode['start'],
-                'periode_selesai' => $periode['end']
-            ]);
-
-            $upah = Upah::create($data);
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Data upah berhasil ditambahkan',
-                'data' => $upah
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Gagal menambahkan data upah',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return ['status' => true];
     }
 
-    public function show($id)
+    private function calculateTotals($karyawanId, $startDate, $endDate)
     {
-        try {
-            $upah = Upah::with([
-                'karyawan.user' => function ($query) {
-                    $query->select('id', 'nama_lengkap', 'email', 'created_at');
-                }
-            ])->find($id);
-
-            if (!$upah) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Data upah tidak ditemukan'
-                ], 404);
-            }
-
-            if (Auth::user()->role !== UserRole::Admin) {
-                $karyawan = Karyawan::where('users_id', Auth::id())->first();
-                if (!$karyawan || $upah->karyawan_id !== $karyawan->id) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Unauthorized access'
-                    ], 403);
-                }
-            }
-
-            $upah->working_days = $this->getWorkingDays(
-                $upah->periode_mulai,
-                $upah->periode_selesai
-            );
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Data upah berhasil diambil',
-                'data' => $upah
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Gagal mengambil data upah',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return DB::table('barang_harian as bh')
+            ->join('barang as b', 'b.id', '=', 'bh.barang_id')
+            ->where('bh.karyawan_id', $karyawanId)
+            ->whereBetween('bh.tanggal', [$startDate, $endDate])
+            ->select(
+                DB::raw('COALESCE(SUM(bh.jumlah_dikerjakan), 0) as total_dikerjakan'),
+                DB::raw('COALESCE(SUM(bh.jumlah_dikerjakan * b.upah), 0) as total_upah')
+            )
+            ->first();
     }
 
-    public function getByWeek($weekNumber)
+    private function getDetailPerhitungan($karyawanId, $startDate, $endDate)
     {
-        try {
-            $query = Upah::with([
-                'karyawan.user' => function ($query) {
-                    $query->select('id', 'nama_lengkap', 'email', 'created_at');
-                }
-            ])->where('minggu_ke', $weekNumber);
-
-            if (Auth::user()->role !== UserRole::Admin) {
-                $karyawan = Karyawan::where('users_id', Auth::id())->first();
-                if (!$karyawan) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Data karyawan tidak ditemukan'
-                    ], 404);
-                }
-                $query->where('karyawan_id', $karyawan->id);
-            }
-
-            $upah = $query->orderBy('periode_mulai', 'desc')->get();
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Data upah berhasil diambil',
-                'data' => $upah
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Gagal mengambil data upah',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return DB::table('barang_harian as bh')
+            ->join('barang as b', 'b.id', '=', 'bh.barang_id')
+            ->where('bh.karyawan_id', $karyawanId)
+            ->whereBetween('bh.tanggal', [$startDate, $endDate])
+            ->select(
+                'b.nama as nama_barang',
+                'b.upah as upah_per_kodi',
+                'bh.tanggal',
+                'bh.jumlah_dikerjakan',
+                DB::raw('(bh.jumlah_dikerjakan * b.upah) as subtotal')
+            )
+            ->orderBy('bh.tanggal')
+            ->get();
     }
 
-    public function update(Request $request, $id)
+    private function handleException(\Exception $e)
     {
-        if (Auth::user()->role !== UserRole::Admin) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthorized access'
-            ], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'karyawan_id' => 'required|exists:karyawan,id',
-            'total_dikerjakan' => 'required|integer|min:0',
-            'total_upah' => 'required|integer|min:0',
-            'periode_mulai' => 'required|date'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Validation Error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $upah = Upah::find($id);
-            if (!$upah) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Data upah tidak ditemukan'
-                ], 404);
-            }
-
-            $karyawan = Karyawan::with('user')->find($request->karyawan_id);
-            if (!$karyawan || !$karyawan->user) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Data karyawan tidak lengkap'
-                ], 404);
-            }
-
-            $periode = $this->calculatePeriodDates($request->periode_mulai);
-            $mingguKe = $this->calculateWeekNumber(
-                $karyawan->user->created_at,
-                $periode['start']
-            );
-
-            $existingUpah = Upah::where('karyawan_id', $request->karyawan_id)
-                ->where('id', '!=', $id)
-                ->where(function ($query) use ($periode) {
-                    $query->whereBetween('periode_mulai', [$periode['start'], $periode['end']])
-                        ->orWhereBetween('periode_selesai', [$periode['start'], $periode['end']]);
-                })->first();
-
-            if ($existingUpah) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Sudah ada data upah untuk periode ini'
-                ], 422);
-            }
-
-            $data = array_merge($request->all(), [
-                'minggu_ke' => $mingguKe,
-                'periode_mulai' => $periode['start'],
-                'periode_selesai' => $periode['end']
-            ]);
-
-            $upah->update($data);
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Data upah berhasil diupdate',
-                'data' => $upah
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Gagal mengupdate data upah',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function destroy($id)
-    {
-        if (Auth::user()->role !== UserRole::Admin) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthorized access'
-            ], 403);
-        }
-
-        try {
-            $upah = Upah::find($id);
-            if (!$upah) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Data upah tidak ditemukan'
-                ], 404);
-            }
-
-            $upah->delete();
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Data upah berhasil dihapus'
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Gagal menghapus data upah',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'status' => false,
+            'message' => 'Terjadi kesalahan sistem',
+            'error' => $e->getMessage()
+        ], 500);
     }
 }

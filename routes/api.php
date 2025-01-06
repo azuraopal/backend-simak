@@ -61,21 +61,21 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::delete('/{id}', [UpahController::class, 'destroy'])->name('upah.destroy');
     });
 
-    // Kategori Managemet
+    // Kategori Management
     Route::prefix('kategori')->group(function () {
         Route::post('/', [KategoriController::class, 'store'])->name('kategori.store');
         Route::put('/{id}', [KategoriController::class, 'update'])->name('kategori.update');
         Route::delete('/{id}', [KategoriController::class, 'destroy'])->name('kategori.destroy');
     });
 
-    // Barang Managemet
+    // Barang Management
     Route::prefix('barang')->group(function () {
         Route::post('/', [BarangController::class, 'store'])->name('barang.store');
         Route::put('/{id}', [BarangController::class, 'update'])->name('barang.update');
         Route::delete('/{id}', [BarangController::class, 'destroy'])->name('barang.destroy');
     });
 
-    // Barang Harian Managemet
+    // Barang Harian Management
     Route::prefix('barang-harian')->group(function () {
         Route::post('/', [BarangHarianController::class, 'store'])->name('barang-harian.store');
         Route::put('/{id}', [BarangHarianController::class, 'update'])->name('barang-harian.update');

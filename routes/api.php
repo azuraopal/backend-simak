@@ -54,7 +54,7 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::get('/search', [KaryawanController::class, 'search'])->name('karyawan.search');
     });
 
-    // Upah Managemet
+    // Upah Management
     Route::prefix('upah')->group(function () {
         Route::post('/', [UpahController::class, 'store'])->name('upah.store');
         Route::put('/{id}', [UpahController::class, 'update'])->name('upah.update');

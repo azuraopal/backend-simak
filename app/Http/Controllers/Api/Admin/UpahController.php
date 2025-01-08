@@ -28,10 +28,10 @@ class UpahController extends Controller
                 'detailPerhitungan' => function ($query) {
                     $query->select(
                         'barang_harian.*',
-                        'b.nama as nama_barang',
-                        'b.upah as upah_per_kodi'
+                        'b1.nama as nama_barang',
+                        'b1.upah as upah_per_kodi'
                     )
-                        ->join('barang as b', 'b.id', '=', 'barang_harian.barang_id');
+                        ->join('barang as b1', 'b1.id', '=', 'barang_harian.barang_id'); 
                 }
             ]);
 

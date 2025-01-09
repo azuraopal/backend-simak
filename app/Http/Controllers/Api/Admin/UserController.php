@@ -18,7 +18,15 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        return response()->json(User::all(), 200);
+        $users = User::all();
+        $totalUsers = $users->count();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Data pengguna berhasil diambil',
+            'total_users' => $totalUsers,
+            'data' => $users,
+        ], 200);
     }
     public function store(Request $request)
     {

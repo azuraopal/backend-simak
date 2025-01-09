@@ -21,7 +21,7 @@ class KaryawanSeeder extends Seeder
             'pekerjaan'=> 'Lem Atas',
             'alamat'=> 'Jl. Pintu',
             'telepon'=> '08123456789',
-            'email' => 'user->email'
+            'email' => $user->email
         ]);
     }
 }

@@ -19,5 +19,12 @@ class UserSeeder extends Seeder
             'password' => Hash::make('nopal123'),
             'role' => 'Admin',
         ]);
+
+        User::create([ 
+            'nama_lengkap' => 'Karyawan',
+            'email' => 'muhammadnovalsupriyadi1@gmail.com',
+            'password' => Hash::make('nopal123'),
+            'role' => 'Karyawan',
+        ]);
     }
 }

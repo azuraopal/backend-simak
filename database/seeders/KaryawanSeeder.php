@@ -13,12 +13,12 @@ class KaryawanSeeder extends Seeder
     public function run(): void
     {
         Karyawan::create([ 
-            "users_id"=> 3,
-            "nama"=> "Milki Dwi",
-            "tanggal_lahir"=> "26-12-2024",
-            "pekerjaan"=> "Lem Atas",
-            "alamat"=> "Jl. Pintu",
-            "telepon"=> "08123456789"
+            'users_id'=> 2,
+            'nama'=> 'Milki Dwi',
+            'tanggal_lahir'=> '26-12-2024',
+            'pekerjaan'=> 'Lem Atas',
+            'alamat'=> 'Jl. Pintu',
+            'telepon'=> '08123456789'
         ]);
     }
 }

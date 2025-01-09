@@ -12,7 +12,7 @@ class KategoriController extends Controller
     private function validateRole(Request $request): void
     {
         if ($request->user()?->role !== UserRole::Admin) {
-            abort(403, 'Unauthorized.');
+            abort(403, 'Unauthorized');
         }
     }
 
@@ -21,7 +21,7 @@ class KategoriController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Kategori fetched successfully.',
+            'message' => 'Kategori berhasil diambil',
             'data' => Kategori::all()
         ]);
     }
@@ -39,7 +39,7 @@ class KategoriController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Kategori created successfully.',
+            'message' => 'Kategori berhasil dibuat',
             'data' => $kategori
         ], 201);
     }
@@ -52,14 +52,14 @@ class KategoriController extends Controller
         if (!$kategori) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kategori not found.',
+                'message' => 'Kategori tidak ditemukan',
                 'data' => null
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Kategori details fetched successfully.',
+            'message' => 'Detail kategori berhasil diambil.',
             'data' => $kategori
         ]);
     }
@@ -74,7 +74,7 @@ class KategoriController extends Controller
         if (!$kategori) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kategori not found.',
+                'message' => 'Kategori tidak ditemukan',
                 'data' => null
             ], 404);
         }
@@ -88,7 +88,7 @@ class KategoriController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Kategori updated successfully.',
+            'message' => 'Kategori berhasil diupdate',
             'data' => $kategori
         ]);
     }
@@ -102,7 +102,7 @@ class KategoriController extends Controller
         if (!$kategori) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kategori not found.',
+                'message' => 'Kategori tidak ditemukan',
                 'data' => null
             ], 404);
         }
@@ -111,7 +111,7 @@ class KategoriController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Kategori deleted successfully.',
+            'message' => 'Kategori berhasil dihapus',
         ], 200);
     }
 

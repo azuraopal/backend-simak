@@ -50,7 +50,7 @@ class UserController extends Controller
                 if (!$emailSent) {
                     return response()->json([
                         'status' => false,
-                        'message' => 'Failed to send email credentials. User not created.',
+                        'message' => 'Gagal mengirim kredensial email. User tidak dibuat',
                     ], 500);
                 }
             }
@@ -66,7 +66,7 @@ class UserController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'User registered successfully',
+                'message' => 'User berhasil didaftarkan',
                 'data' => $user,
             ], 201);
         } catch (Exception $e) {
@@ -85,7 +85,7 @@ class UserController extends Controller
             $user = User::findOrFail($id);
             return response()->json($user, 200);
         } catch (Exception $e) {
-            return response()->json(['message' => 'User not found.'], 404);
+            return response()->json(['message' => 'User tidak ditemukan'], 404);
         }
     }
 
@@ -119,11 +119,11 @@ class UserController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'User updated successfully',
+                'message' => 'User berhasil diupdate',
                 'data' => $user,
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'User not found.'], 404);
+            return response()->json(['message' => 'User tidak ditemukan'], 404);
         }
     }
 
@@ -133,9 +133,9 @@ class UserController extends Controller
             $user = User::findOrFail($id);
             $user->delete();
 
-            return response()->json(['message' => 'User deleted successfully.'], 200);
+            return response()->json(['message' => 'User berhasil dihapus'], 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'User not found.'], 404);
+            return response()->json(['message' => 'User tidak ditemukan'], 404);
         }
     }
 
@@ -158,7 +158,7 @@ class UserController extends Controller
         $user->save();
 
         return response()->json([
-            'message' => 'Foto profil berhasil diunggah.',
+            'message' => 'Foto profil berhasil diunggah',
             'foto_profile_url' => $user->foto_profile_url,
         ]);
     }
@@ -183,7 +183,7 @@ class UserController extends Controller
         if (!Hash::check($request->old_password, $user->password)) {
             return response()->json([
                 'status' => false,
-                'message' => 'Password lama tidak sesuai.',
+                'message' => 'Password lama tidak sesuai',
             ], 400);
         }
 
@@ -192,7 +192,7 @@ class UserController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Password berhasil diperbarui.',
+            'message' => 'Password berhasil diperbarui',
         ], 200);
     }
 

@@ -43,14 +43,14 @@ class KaryawanController extends Controller
         if (!$user || $user->role !== UserRole::Karyawan) {
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid karyawan ID or user is not a Karyawan'
+                'message' => 'ID karyawan tidak valid atau User bukan Karyawan'
             ], 422);
         }
 
         if (Karyawan::where('users_id', $request->users_id)->exists()) {
             return response()->json([
                 'status' => false,
-                'message' => 'Karyawan information already exists'
+                'message' => 'Informasi karyawan sudah tersedia'
             ], 422);
         }
 
@@ -72,7 +72,7 @@ class KaryawanController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'Karyawan information created successfully',
+                'message' => 'Informasi karyawan berhasil dibuat',
                 'data' => $karyawan->load('user')
             ], 201);
 
@@ -80,7 +80,7 @@ class KaryawanController extends Controller
             DB::rollBack();
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to create karyawan information',
+                'message' => 'Gagal membuat informasi karyawan',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -93,7 +93,7 @@ class KaryawanController extends Controller
         if (!$karyawan) {
             return response()->json([
                 'status' => false,
-                'message' => 'Karyawan not found'
+                'message' => 'Karyawan tidak ditemukan'
             ], 404);
         }
 

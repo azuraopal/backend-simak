@@ -37,7 +37,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'User registered successfully'
+            'message' => 'User berhasil didaftarkan'
         ], 201);
     }
 
@@ -60,7 +60,7 @@ class AuthController extends Controller
         if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
                 'status' => false,
-                'message' => 'Invalid credentials'
+                'message' => 'Email atau password anda salah'
             ], 401);
         }
 
@@ -69,7 +69,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Login successful',
+            'message' => 'Login berhasil',
             'data' => [
                 'user' => $user,
                 'token' => $token
@@ -83,7 +83,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'Successfully logged out'
+            'message' => 'Logout berhasil'
         ]);
     }
     public function profile(Request $request)
@@ -99,7 +99,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => true,
-            'message' => 'User profile retrieved successfully',
+            'message' => 'Profil User berhasil diambil',
             'data' => $user
         ]);
     }

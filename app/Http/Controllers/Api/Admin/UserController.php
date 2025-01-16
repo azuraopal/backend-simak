@@ -130,7 +130,7 @@ class UserController extends Controller
                 'message' => 'User berhasil diupdate',
                 'data' => $user,
             ], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['message' => 'User tidak ditemukan'], 404);
         }
     }
@@ -142,7 +142,7 @@ class UserController extends Controller
             $user->delete();
 
             return response()->json(['message' => 'User berhasil dihapus'], 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['message' => 'User tidak ditemukan'], 404);
         }
     }

@@ -31,7 +31,7 @@ class UpahController extends Controller
                         'b1.nama as nama_barang',
                         'b1.upah as upah_per_kodi'
                     )
-                        ->join('barang as b1', 'b1.id', '=', 'barang_harian.barang_id'); 
+                        ->join('barang as b1', 'b1.id', '=', 'barang_harian.barang_id');
                 }
             ]);
 
@@ -70,7 +70,7 @@ class UpahController extends Controller
 
     public function store(Request $request)
     {
-        if (Auth::user()->role !== UserRole::Admin) {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized access'

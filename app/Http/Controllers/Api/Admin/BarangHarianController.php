@@ -40,6 +40,13 @@ class BarangHarianController extends Controller
 
             $barangHarian = $query->orderBy('tanggal', 'desc')->get();
 
+            if ($barangHarian->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data barang harian tidak ditemukan'
+                ], 404);
+            }
+
             return response()->json([
                 'status' => true,
                 'message' => 'Data barang harian berhasil diambil',
@@ -49,6 +56,7 @@ class BarangHarianController extends Controller
             return $this->handleException($e);
         }
     }
+
 
     public function store(Request $request)
     {
@@ -95,7 +103,7 @@ class BarangHarianController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Data barang harian berhasil ditambahkan',
-                'data' => $barangHarian->load(['barang', 'karyawan.user']) 
+                'data' => $barangHarian->load(['barang', 'karyawan.user'])
             ], 201);
         } catch (\Exception $e) {
             return response()->json([

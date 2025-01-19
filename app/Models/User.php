@@ -29,8 +29,9 @@ class User extends Authenticatable
             return asset("storage/profile_photos/{$this->foto_profile}");
         }
 
-        return asset('storage/profile_photos/default.jpg');
+        return asset('storage/' . config('constants.default_profile_picture'));
     }
+
 
     protected $hidden = [
         'password',

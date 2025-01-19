@@ -15,8 +15,7 @@ return new class extends Migration {
             $table->string('nama', 100);
             $table->text('deskripsi');
             $table->foreignId('kategori_barang')->constrained('kategori', 'id')->restrictOnDelete()->restrictOnUpdate();
-            $table->integer('stok_awal')->default(0);
-            $table->integer('stok_tersedia')->default(0);
+            $table->integer('stock_id')->nullable()->constrained('stocks')->nullOnDelete();
             $table->integer('upah');
             $table->timestamps();
             $table->softDeletes();

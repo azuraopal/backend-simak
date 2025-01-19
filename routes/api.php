@@ -16,6 +16,8 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Public Routes
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/register/admin', [UserController::class, 'registerByAdmin']);
+    Route::post('/register/staff', [UserController::class, 'registerByStaff']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/users/upload-photo', [UserController::class, 'uploadPhoto']);

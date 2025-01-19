@@ -4,17 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Barang extends Model
 {
+    use LogsActivity;
+
     protected $table = 'barang';
 
     protected $fillable = [
         'nama',
         'deskripsi',
         'kategori_barang',
-        'stok_awal',
-        'stok_tersedia',
+        'stock_id',
         'upah'
     ];
 
@@ -23,8 +26,44 @@ class Barang extends Model
         return $this->hasMany(BarangHarian::class, 'barang_id');
     }
 
+    public function stock()
+    {
+        return $this->hasOne(Stock::class, 'id', 'stock_id');
+    }
+
+    public function kategori()
+    {
+        return $this->belongsTo(Kategori::class, 'kategori_barang', 'id');
+    }
+
+    public function getShortDescriptionAttribute()
+    {
+        return substr($this->deskripsi, 0, 50) . '...';
+    }
+
+    public function setNamaAttribute($value)
+    {
+        $this->attributes['nama'] = ucwords(strtolower($value));
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['nama', 'deskripsi', 'kategori_barang', 'upah'])
+            ->useLogName('barang')
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+
     protected static function booted()
     {
+        static::creating(function ($barang) {
+            if (!$barang->stock_id) {
+                $stock = Stock::create(['stock' => 0]);
+                $barang->stock_id = $stock->id;
+            }
+        });
+
         static::updated(function ($barang) {
             if ($barang->isDirty('upah')) {
                 $barangHarians = DB::table('barang_harian')
@@ -55,6 +94,13 @@ class Barang extends Model
                     }
                 }
             }
+        });
+
+        static::deleted(function ($barang) {
+            activity()
+                ->causedBy(auth()->user())
+                ->performedOn($barang)
+                ->log("Barang '{$barang->nama}' telah dihapus");
         });
     }
 }

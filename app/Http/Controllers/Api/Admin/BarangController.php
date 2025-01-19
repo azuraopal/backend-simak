@@ -4,9 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\UserRole;
 use App\Models\Barang;
-use App\Models\BarangHarian;
-use App\Models\Karyawan;
-use Carbon\Carbon;
+use App\Models\Stock;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -14,164 +12,176 @@ use Illuminate\Support\Facades\Validator;
 
 class BarangController extends Controller
 {
-    private function handleException(\Exception $e)
+    public function addStock(Request $request, $id)
     {
+        $validator = Validator::make($request->all(), [
+            'stok_tambahan' => 'required|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation Error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $barang = Barang::findOrFail($id);
+        $stock = $barang->stock;
+
+        if ($stock) {
+            $stock->stock += $request->stok_tambahan;
+            $stock->save();
+
+            activity()
+                ->causedBy(auth()->user())
+                ->withProperties(['stok_tambahan' => $request->stok_tambahan])
+                ->log("Menambahkan stok barang: {$barang->nama}");
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Barang tidak memiliki stok awal',
+            ], 400);
+        }
+
         return response()->json([
-            'status' => false,
-            'message' => 'Terjadi kesalahan sistem',
-            'error' => $e->getMessage()
-        ], 500);
+            'status' => true,
+            'message' => 'Stok berhasil ditambahkan',
+            'data' => $barang->load('stock'),
+        ], 200);
     }
 
     public function index()
     {
         try {
-            $barang = Barang::all();
+            $barang = Barang::with('stock', 'kategori')->get();
+
+            activity()
+                ->causedBy(auth()->user())
+                ->log('Melihat daftar barang.');
 
             return response()->json([
                 'status' => true,
                 'message' => 'Data barang berhasil diambil',
-                'data' => $barang
+                'data' => $barang,
             ], 200);
         } catch (\Exception $e) {
-            return $this->handleException($e);
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat mengambil data barang',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 
     public function store(Request $request)
     {
-        if (Auth::user()->role !== UserRole::Admin) {
+        $validator = Validator::make($request->all(), [
+            'nama' => 'required|string|max:100',
+            'deskripsi' => 'required|string',
+            'kategori_barang' => 'required|integer|exists:kategori,id',
+            'stok_awal' => 'required|integer|min:0',
+            'upah' => 'required|integer|min:0',
+        ]);
+
+        if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'message' => 'Unauthorized access'
-            ], 403);
+                'message' => 'Validation Error',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         try {
-            $validator = Validator::make($request->all(), [
-                'nama' => 'required|string|max:100',
-                'deskripsi' => 'required|string',
-                'kategori_barang' => 'required|integer|exists:kategori,id',
-                'stok_awal' => 'required|integer|min:0',
-                'stok_tersedia' => 'required|integer|min:0',
-                'upah' => 'required|integer|min:0'
+            $stock = Stock::create(['stock' => $request->stok_awal]);
+
+            $barang = Barang::create([
+                'nama' => $request->nama,
+                'deskripsi' => $request->deskripsi,
+                'kategori_barang' => $request->kategori_barang,
+                'stock_id' => $stock->id,
+                'upah' => $request->upah,
             ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Validation Error',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $barang = Barang::create($request->all());
+            activity()
+                ->causedBy(auth()->user())
+                ->performedOn($barang)
+                ->withProperties($barang->toArray())
+                ->log('Menambahkan barang baru.');
 
             return response()->json([
                 'status' => true,
-                'message' => 'Data barang berhasil ditambahkan',
-                'data' => $barang
+                'message' => 'Barang berhasil ditambahkan dengan stok awal',
+                'data' => $barang->load('stock'),
             ], 201);
         } catch (\Exception $e) {
-            return $this->handleException($e);
+            return response()->json([
+                'status' => false,
+                'message' => 'Server Error',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 
     public function show($id)
     {
-        try {
-            $barang = Barang::find($id);
+        $barang = Barang::with('stock', 'kategori')->findOrFail($id);
 
-            if (!$barang) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Data barang tidak ditemukan'
-                ], 404);
-            }
+        activity()
+            ->causedBy(auth()->user())
+            ->log("Melihat detail barang: {$barang->nama}");
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Data barang berhasil diambil',
-                'data' => $barang
-            ], 200);
-        } catch (\Exception $e) {
-            return $this->handleException($e);
-        }
+        return response()->json([
+            'status' => true,
+            'message' => 'Data barang berhasil diambil',
+            'data' => $barang,
+        ], 200);
     }
 
     public function update(Request $request, $id)
     {
-        if (Auth::user()->role !== UserRole::Admin) {
+        $validator = Validator::make($request->all(), [
+            'nama' => 'required|string|max:100',
+            'deskripsi' => 'required|string',
+            'kategori_barang' => 'required|integer|exists:kategori,id',
+            'upah' => 'required|integer|min:0',
+        ]);
+
+        if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'message' => 'Unauthorized access'
-            ], 403);
+                'message' => 'Validation Error',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        try {
-            $validator = Validator::make($request->all(), [
-                'nama' => 'required|string|max:100',
-                'deskripsi' => 'required|string',
-                'kategori_barang' => 'required|integer|exists:kategori,id',
-                'stok_awal' => 'required|integer|min:0',
-                'stok_tersedia' => 'required|integer|min:0',
-                'upah' => 'required|integer|min:0'
-            ]);
+        $barang = Barang::findOrFail($id);
+        $barang->update($request->all());
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Validation Error',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
+        activity()
+            ->causedBy(auth()->user())
+            ->withProperties($request->all())
+            ->log("Mengupdate data barang: {$barang->nama}");
 
-            $barang = Barang::find($id);
-            if (!$barang) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Data barang tidak ditemukan'
-                ], 404);
-            }
-
-            $barang->update($request->all());
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Data barang berhasil diupdate',
-                'data' => $barang
-            ], 200);
-        } catch (\Exception $e) {
-            return $this->handleException($e);
-        }
+        return response()->json([
+            'status' => true,
+            'message' => 'Data barang berhasil diupdate',
+            'data' => $barang,
+        ], 200);
     }
 
     public function destroy($id)
     {
-        if (Auth::user()->role !== UserRole::Admin) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthorized access'
-            ], 403);
-        }
+        $barang = Barang::findOrFail($id);
+        $barang->delete();
 
-        try {
-            $barang = Barang::find($id);
-            if (!$barang) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Data barang tidak ditemukan'
-                ], 404);
-            }
+        activity()
+            ->causedBy(auth()->user())
+            ->log("Menghapus barang: {$barang->nama}");
 
-            $barang->delete();
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Data barang berhasil dihapus'
-            ], 200);
-        } catch (\Exception $e) {
-            return $this->handleException($e);
-        }
+        return response()->json([
+            'status' => true,
+            'message' => 'Data barang berhasil dihapus',
+        ], 200);
     }
 }

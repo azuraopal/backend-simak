@@ -21,19 +21,7 @@ class UpahController extends Controller
     public function index()
     {
         try {
-            $upah = Upah::with([
-                'karyawan.user' => function ($query) {
-                    $query->select('id', 'nama_lengkap', 'email', 'created_at');
-                },
-                'detailPerhitungan' => function ($query) {
-                    $query->select(
-                        'barang_harian.*',
-                        'b1.nama as nama_barang',
-                        'b1.upah as upah_per_kodi'
-                    )
-                        ->join('barang as b1', 'b1.id', '=', 'barang_harian.barang_id');
-                }
-            ]);
+            $upahQuery = Upah::with(['karyawan.user:id,nama_lengkap,email,created_at']);
 
             if (Auth::user()->role !== UserRole::Admin) {
                 $karyawan = Karyawan::where('users_id', Auth::id())->first();
@@ -45,22 +33,49 @@ class UpahController extends Controller
                     ], 404);
                 }
 
-                $upah->where('karyawan_id', $karyawan->id);
+                $upahQuery->where('karyawan_id', $karyawan->id);
             }
 
-            $upah = $upah->orderBy('periode_mulai', 'desc')->get();
+            $upahList = $upahQuery->orderBy('periode_mulai', 'desc')->get();
 
-            if ($upah->isEmpty()) {
+            if ($upahList->isEmpty()) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Data upah tidak ditemukan',
                 ], 404);
             }
 
+            $upahList = $upahList->map(function ($upah) {
+                $detailPerhitungan = DB::table('barang_harian as bh')
+                    ->join('barang as b', 'b.id', '=', 'bh.barang_id')
+                    ->where('bh.karyawan_id', $upah->karyawan_id)
+                    ->whereBetween('bh.tanggal', [$upah->periode_mulai, $upah->periode_selesai])
+                    ->select(
+                        'b.nama as nama_barang',
+                        'b.upah as upah_per_kodi',
+                        'bh.tanggal',
+                        'bh.jumlah_dikerjakan',
+                        DB::raw('(bh.jumlah_dikerjakan * b.upah) as subtotal')
+                    )
+                    ->orderBy('bh.tanggal')
+                    ->get();
+
+                return [
+                    'id' => $upah->id,
+                    'karyawan' => $upah->karyawan,
+                    'minggu_ke' => $upah->minggu_ke,
+                    'total_dikerjakan' => $upah->total_dikerjakan,
+                    'total_upah' => $upah->total_upah,
+                    'periode_mulai' => $upah->periode_mulai,
+                    'periode_selesai' => $upah->periode_selesai,
+                    'detail_perhitungan' => $detailPerhitungan
+                ];
+            });
+
             return response()->json([
                 'status' => true,
                 'message' => 'Data upah berhasil diambil',
-                'data' => $upah
+                'data' => $upahList
             ], 200);
         } catch (\Exception $e) {
             return $this->handleException($e);

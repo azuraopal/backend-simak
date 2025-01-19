@@ -9,15 +9,16 @@ use App\Enums\UserRole;
 
 class KategoriController extends Controller
 {
-    private function validateRole(Request $request): void
+    private function validateRole(Request $request, array $allowedRoles): void
     {
-        if ($request->user()?->role !== UserRole::Admin) {
-            abort(403, 'Unauthorized');
+        if (!in_array($request->user()?->role, $allowedRoles)) {
+            abort(403, 'Unauthorized access');
         }
     }
 
     public function index(Request $request)
     {
+        $this->validateRole($request, [UserRole::Admin, UserRole::Staff]);
 
         return response()->json([
             'success' => true,
@@ -28,11 +29,12 @@ class KategoriController extends Controller
 
     public function store(Request $request)
     {
-        $this->validateRole($request);
+
+        $this->validateRole($request, [UserRole::Admin, UserRole::Staff]);
 
         $validated = $request->validate([
             'nama' => 'required|string|max:70',
-            'deskripsi' => 'nullable|string',
+            'deskripsi' => 'nullable|string|max:255',
         ]);
 
         $kategori = Kategori::create($validated);
@@ -46,6 +48,7 @@ class KategoriController extends Controller
 
     public function show(Request $request, $id)
     {
+        $this->validateRole($request, [UserRole::Admin, UserRole::Staff]);
 
         $kategori = Kategori::find($id);
 
@@ -64,10 +67,9 @@ class KategoriController extends Controller
         ]);
     }
 
-
     public function update(Request $request, $id)
     {
-        $this->validateRole($request);
+        $this->validateRole($request, [UserRole::Admin]);
 
         $kategori = Kategori::find($id);
 
@@ -81,7 +83,7 @@ class KategoriController extends Controller
 
         $validated = $request->validate([
             'nama' => 'required|string|max:100',
-            'deskripsi' => 'nullable|string',
+            'deskripsi' => 'nullable|string|max:255',
         ]);
 
         $kategori->update($validated);
@@ -95,7 +97,7 @@ class KategoriController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $this->validateRole($request);
+        $this->validateRole($request, [UserRole::Admin]);
 
         $kategori = Kategori::find($id);
 
@@ -114,5 +116,4 @@ class KategoriController extends Controller
             'message' => 'Kategori berhasil dihapus',
         ], 200);
     }
-
 }

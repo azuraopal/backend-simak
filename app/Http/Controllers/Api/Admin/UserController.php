@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Support\Str;
 
@@ -30,10 +31,24 @@ class UserController extends Controller
     }
     public function store(Request $request)
     {
+        $currentRole = $request->user()->role->value;
+
+        $allowedRoles = $this->getAllowedRoles($currentRole);
+        if (empty($allowedRoles)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized to create user with this role',
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'nama_lengkap' => 'required|string|max:100',
             'email' => 'required|string|email|max:255|unique:users,email',
-            'role' => ['required', new Enum(UserRole::class)],
+            'role' => [
+                'required',
+                new Enum(UserRole::class),
+                Rule::in($allowedRoles),
+            ],
         ]);
 
         if ($validator->fails()) {
@@ -45,24 +60,25 @@ class UserController extends Controller
         }
 
         try {
-            $defaultFotoProfile = 'default.jpg';
             $password = Str::random(8);
 
-            if ($request->role === UserRole::Karyawan->value) {
-                $emailSent = EmailHelper::sendUserCredentials(
-                    $request->email,
-                    $request->nama_lengkap,
-                    $password
-                );
+            $emailSent = EmailHelper::sendUserCredentials(
+                $request->email,
+                $request->nama_lengkap,
+                $password
+            );
 
-                if (!$emailSent) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Gagal mengirim kredensial email. User tidak dibuat',
-                    ], 500);
-                }
+            if (!$emailSent) {
+                \Log::error('Email gagal dikirim untuk user: ' . $request->email);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Gagal mengirim kredensial email. User tidak dibuat',
+                ], 500);
             }
 
+            $defaultFotoProfile = config('constants.default_profile_picture', 'default.jpg');
+
+            // Buat user baru
             $user = User::create([
                 'nama_lengkap' => $request->nama_lengkap,
                 'email' => $request->email,
@@ -74,10 +90,11 @@ class UserController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'User berhasil didaftarkan',
+                'message' => "User dengan peran {$request->role} berhasil didaftarkan oleh {$currentRole}",
                 'data' => $user,
             ], 201);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
+            \Log::error('Error saat membuat user: ' . $e->getMessage());
             return response()->json([
                 'status' => false,
                 'message' => 'Server Error',
@@ -86,6 +103,18 @@ class UserController extends Controller
         }
     }
 
+    private function getAllowedRoles(string $currentRole): array
+    {
+        if ($currentRole === UserRole::Admin->value) {
+            return [UserRole::Admin->value, UserRole::Staff->value, UserRole::Karyawan->value];
+        }
+
+        if ($currentRole === UserRole::Staff->value) {
+            return [UserRole::Karyawan->value];
+        }
+
+        return [];
+    }
 
     public function show(Request $request, $id)
     {
@@ -146,7 +175,6 @@ class UserController extends Controller
             return response()->json(['message' => 'User tidak ditemukan'], 404);
         }
     }
-
     public function uploadPhoto(Request $request)
     {
         $request->validate([
@@ -155,19 +183,19 @@ class UserController extends Controller
 
         $user = $request->user();
 
-        if ($user->foto_profile) {
-            Storage::delete("public/profile_photos/{$user->foto_profile}");
+        if ($user->foto_profile && Storage::exists("public/{$user->foto_profile}")) {
+            Storage::delete("public/{$user->foto_profile}");
         }
 
         $fileName = uniqid() . '.' . $request->foto_profile->extension();
         $request->foto_profile->storeAs('public/profile_photos', $fileName);
 
-        $user->foto_profile = $fileName;
+        $user->foto_profile = "profile_photos/{$fileName}";
         $user->save();
 
         return response()->json([
             'message' => 'Foto profil berhasil diunggah',
-            'foto_profile_url' => $user->foto_profile_url,
+            'foto_profile_url' => asset("storage/{$user->foto_profile}"),
         ]);
     }
 

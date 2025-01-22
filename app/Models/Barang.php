@@ -62,6 +62,15 @@ class Barang extends Model
                 $stock = Stock::create(['stock' => 0]);
                 $barang->stock_id = $stock->id;
             }
+
+            activity()
+                ->causedBy(auth()->user())
+                ->performedOn($barang)
+                ->withProperties([
+                    'action' => 'creating',
+                    'attributes' => $barang->attributesToArray()
+                ])
+                ->log("Barang '{$barang->nama}' sedang dibuat");
         });
 
         static::updated(function ($barang) {
@@ -94,12 +103,24 @@ class Barang extends Model
                     }
                 }
             }
+
+            activity()
+                ->causedBy(auth()->user())
+                ->performedOn($barang)
+                ->withProperties([
+                    'action' => 'updated',
+                    'changes' => $barang->getChanges()
+                ])
+                ->log("Barang '{$barang->nama}' telah diperbarui");
         });
 
         static::deleted(function ($barang) {
             activity()
                 ->causedBy(auth()->user())
                 ->performedOn($barang)
+                ->withProperties([
+                    'action' => 'deleted'
+                ])
                 ->log("Barang '{$barang->nama}' telah dihapus");
         });
     }

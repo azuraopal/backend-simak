@@ -22,6 +22,20 @@ Route::middleware('auth:sanctum')->group(function () {
 // Routes (Admin)
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
 
+    // Acitivity Log
+    Route::get('/logs', function () {
+        $logs = \Spatie\Activitylog\Models\Activity::whereHas('causer', function ($query) {
+            $query->where('role', 'Staff');
+        })->latest()->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Log aktivitas berhasil diambil',
+            'data' => $logs,
+        ]);
+    })->name('admin.logs');
+
+
     // User Management
     Route::prefix('users')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('admin.users.index');
@@ -80,7 +94,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 });
 
 // Routes (Staff)
-Route::prefix('staff')->middleware(['auth:sanctum', 'staff'])->group(function () {
+Route::prefix('staff')->middleware(['auth:sanctum', 'staff', 'log.activity'])->group(function () {
 
     Route::prefix('users')->group(function () {
         Route::post('/register/karyawan', [UserController::class, 'store'])

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\Admin\KaryawanController;
 use App\Http\Controllers\Api\Admin\KategoriController;
 use App\Http\Controllers\Api\Admin\BarangHarianController;
+use Illuminate\Http\Request;
 
 // Auth Routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -23,10 +24,23 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
 
     // Acitivity Log
-    Route::get('/logs', function () {
-        $logs = \Spatie\Activitylog\Models\Activity::whereHas('causer', function ($query) {
+    Route::get('/logs', function (Request $request) {
+        $query = \Spatie\Activitylog\Models\Activity::query();
+
+        $query->whereHas('causer', function ($query) {
             $query->where('role', 'Staff');
-        })->latest()->get();
+        });
+
+        if ($request->has('action')) {
+            $query->where('properties->action', $request->action);
+        }
+
+        if ($request->has('actions')) {
+            $actions = explode(',', $request->actions);
+            $query->whereIn('properties->action', $actions);
+        }
+
+        $logs = $query->latest()->get();
 
         return response()->json([
             'status' => true,
@@ -34,6 +48,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             'data' => $logs,
         ]);
     })->name('admin.logs');
+
 
 
     // User Management

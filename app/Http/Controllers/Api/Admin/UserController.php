@@ -151,7 +151,7 @@ class UserController extends Controller
     }
 
     /**
-     * Validasi tambahan untuk data user
+     * 
      * @param array $userData
      * @return bool
      */

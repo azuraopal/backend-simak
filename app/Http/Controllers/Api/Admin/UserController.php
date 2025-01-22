@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Helpers\EmailHelper;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use DB;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -29,9 +30,15 @@ class UserController extends Controller
             'data' => $users,
         ], 200);
     }
+
     public function store(Request $request)
     {
-        $currentRole = $request->user()->role->value;
+        $currentRole = $request->user()->role;
+
+
+        if ($currentRole instanceof UserRole) {
+            $currentRole = $currentRole->value;
+        }
 
         $allowedRoles = $this->getAllowedRoles($currentRole);
         if (empty($allowedRoles)) {
@@ -60,41 +67,81 @@ class UserController extends Controller
         }
 
         try {
+            DB::beginTransaction();
+
             $password = Str::random(8);
+            $roleValue = $request->role instanceof UserRole ? $request->role->value : $request->role;
+            $defaultFotoProfile = config('constants.default_profile_picture', 'default.jpg');
 
-            $emailSent = EmailHelper::sendUserCredentials(
-                $request->email,
-                $request->nama_lengkap,
-                $password
-            );
+            try {
+                $emailSent = EmailHelper::sendUserCredentials(
+                    $request->email,
+                    $request->nama_lengkap,
+                    $password
+                );
 
-            if (!$emailSent) {
-                \Log::error('Email gagal dikirim untuk user: ' . $request->email);
+                if (!$emailSent) {
+                    throw new Exception("Gagal mengirim email kredensial");
+                }
+            } catch (Exception $emailError) {
+                DB::rollBack();
+                \Log::error("Error saat mengirim email: " . $emailError->getMessage());
+
                 return response()->json([
                     'status' => false,
-                    'message' => 'Gagal mengirim kredensial email. User tidak dibuat',
+                    'message' => 'Gagal membuat user karena email tidak dapat dikirim',
+                    'error' => $emailError->getMessage()
                 ], 500);
             }
 
-            $defaultFotoProfile = config('constants.default_profile_picture', 'default.jpg');
-
-            // Buat user baru
-            $user = User::create([
+            $userData = [
                 'nama_lengkap' => $request->nama_lengkap,
                 'email' => $request->email,
                 'password' => Hash::make($password),
-                'role' => $request->role,
+                'role' => $roleValue,
                 'foto_profile' => $request->foto_profile ?? $defaultFotoProfile,
                 'email_verified_at' => now(),
-            ]);
+            ];
+
+            if (!$this->validateUserData($userData)) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data user tidak valid',
+                ], 422);
+            }
+
+            $user = User::create($userData);
+
+            if ($currentRole === UserRole::Staff->value) {
+                try {
+                    activity()
+                        ->causedBy($request->user())
+                        ->performedOn($user)
+                        ->withProperties([
+                            'action' => 'store',
+                            'user_id' => $user->id,
+                            'user_email' => $user->email,
+                            'user_role' => $roleValue,
+                        ])
+                        ->log("Staff created a new user with role {$roleValue}");
+                } catch (Exception $logError) {
+                    \Log::warning("Failed to log activity: " . $logError->getMessage());
+                }
+            }
+
+            DB::commit();
 
             return response()->json([
                 'status' => true,
-                'message' => "User dengan peran {$request->role} berhasil didaftarkan oleh {$currentRole}",
+                'message' => "User dengan peran {$roleValue} berhasil didaftarkan oleh {$currentRole}",
                 'data' => $user,
             ], 201);
-        } catch (\Exception $e) {
-            \Log::error('Error saat membuat user: ' . $e->getMessage());
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            \Log::error("Error saat membuat user: " . $e->getMessage());
+
             return response()->json([
                 'status' => false,
                 'message' => 'Server Error',
@@ -103,6 +150,39 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * Validasi tambahan untuk data user
+     * @param array $userData
+     * @return bool
+     */
+    private function validateUserData(array $userData): bool
+    {
+        $requiredFields = ['nama_lengkap', 'email', 'password', 'role'];
+        foreach ($requiredFields as $field) {
+            if (empty($userData[$field])) {
+                \Log::error("Missing required field: {$field}");
+                return false;
+            }
+        }
+
+        if (!filter_var($userData['email'], FILTER_VALIDATE_EMAIL)) {
+            \Log::error("Invalid email format: {$userData['email']}");
+            return false;
+        }
+
+        if (strlen($userData['password']) < 8) {
+            \Log::error("Password too short");
+            return false;
+        }
+
+        $validRoles = array_map(fn($role) => $role->value, UserRole::cases());
+        if (!in_array($userData['role'], $validRoles)) {
+            \Log::error("Invalid role: {$userData['role']}");
+            return false;
+        }
+
+        return true;
+    }
     private function getAllowedRoles(string $currentRole): array
     {
         if ($currentRole === UserRole::Admin->value) {
@@ -128,7 +208,6 @@ class UserController extends Controller
 
     public function update(Request $request, $id)
     {
-
         try {
             $user = User::findOrFail($id);
 
@@ -148,19 +227,39 @@ class UserController extends Controller
             }
 
             $validated = $validator->validated();
+
             if (isset($validated['password'])) {
                 $validated['password'] = Hash::make($validated['password']);
             }
 
             $user->update($validated);
 
+            if (!$user instanceof \Illuminate\Database\Eloquent\Model) {
+                \Log::error("performedOn() menerima tipe data yang salah: " . get_class($user));
+                return response()->json(['message' => 'Server Error'], 500);
+            }
+
+            if ($request->user()->role === UserRole::Staff->value) {
+                activity()
+                    ->causedBy($request->user())
+                    ->performedOn($user)
+                    ->withProperties([
+                        'action' => 'update',
+                        'updated_fields' => array_keys($validated),
+                    ])
+                    ->log("Staff updated user with ID {$user->id}");
+            }
+
             return response()->json([
                 'status' => true,
                 'message' => 'User berhasil diupdate',
                 'data' => $user,
             ], 200);
-        } catch (Exception $e) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['message' => 'User tidak ditemukan'], 404);
+        } catch (Exception $e) {
+            \Log::error("Error saat mengupdate user ID {$id}: {$e->getMessage()}");
+            return response()->json(['message' => 'Server Error'], 500);
         }
     }
 

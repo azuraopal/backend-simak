@@ -151,9 +151,9 @@ class BarangController extends Controller
             ], 500);
         }
     }
-
     public function addStock(Request $request, $id)
     {
+        // Pastikan hanya Admin atau Staff yang dapat mengakses
         if (!$this->isAdminOrStaff($request)) {
             return response()->json([
                 'status' => false,
@@ -161,6 +161,7 @@ class BarangController extends Controller
             ], 403);
         }
 
+        // Cari barang berdasarkan ID
         $barang = Barang::find($id);
 
         if (!$barang) {
@@ -170,6 +171,7 @@ class BarangController extends Controller
             ], 404);
         }
 
+        // Validasi request input
         $validator = Validator::make($request->all(), [
             'stok' => 'required|integer|min:1',
         ]);
@@ -185,24 +187,27 @@ class BarangController extends Controller
         try {
             $stokAwal = $barang->stock ? $barang->stock->stock : 0;
 
-            // Update stok
             $barang->stock()->updateOrCreate(
                 ['id' => $barang->stock_id],
                 ['stock' => $stokAwal + $request->stok]
             );
 
-            // Log aktivitas
+            $user = $request->user();
+
             if ($barang instanceof \Illuminate\Database\Eloquent\Model) {
                 activity()
-                    ->causedBy($request->user())
+                    ->causedBy($user)
                     ->performedOn($barang)
                     ->withProperties([
                         'action' => 'addStock',
                         'added_stock' => $request->stok,
                         'previous_stock' => $stokAwal,
                         'new_stock' => $stokAwal + $request->stok,
+                        'added_by' => $user->id,
+                        'added_by_name' => $user->nama_lengkap ?: $user->email,
                     ])
-                    ->log("Stok barang '{$barang->nama}' berhasil ditambahkan sebanyak {$request->stok}");
+                    ->log("Stok barang '{$barang->nama}' berhasil ditambahkan sebanyak {$request->stok} oleh " . ($user->nama_lengkap ?: $user->email) . ".");
+
             }
 
             return response()->json([
@@ -212,6 +217,7 @@ class BarangController extends Controller
                     'id' => $barang->id,
                     'nama' => $barang->nama,
                     'stok' => $stokAwal + $request->stok,
+                    'added_by' => $user->name ?? $user->email,
                 ],
             ], 200);
         } catch (\Exception $e) {

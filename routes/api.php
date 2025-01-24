@@ -1,4 +1,5 @@
 <?php
+use App\Http\Controllers\Api\Admin\LaporanBarangController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\BarangController;
@@ -106,6 +107,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::put('/{id}', [BarangHarianController::class, 'update'])->name('barang-harian.update');
         Route::delete('/{id}', [BarangHarianController::class, 'destroy'])->name('barang-harian.destroy');
     });
+
+    // Laporan Barang Management
+    Route::prefix('laporan-barang')->group(function () {
+        Route::get('/barang', [LaporanBarangController::class, 'generateLaporanBarang']);
+        Route::get('/ringkasan-barang', [LaporanBarangController::class, 'ringkasanPergerakanBarang']);
+    });
+
 });
 
 // Routes (Staff)

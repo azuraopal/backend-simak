@@ -66,14 +66,15 @@ class BarangController extends Controller
                 ->performedOn($barang)
                 ->withProperties([
                     'action' => 'store',
-                    'nama' => $barang->nama,
+                    'added_by_name' => $request->user()->nama_lengkap,
+                    'nama_barang' => $barang->nama,
                     'stok_awal' => $request->stok_awal,
                 ])
-                ->log("Barang '{$barang->nama}' berhasil ditambahkan dengan stok awal {$request->stok_awal}");
+                ->log("Barang '{$barang->nama}' berhasil ditambahkan dengan stok awal {$request->stok_awal} oleh {$request->user()->nama_lengkap}");
 
             return response()->json([
                 'status' => true,
-                'message' => 'Barang berhasil ditambahkan',
+                'message' => "Barang '{$barang->nama}' berhasil ditambahkan oleh {$request->user()->name}",
                 'data' => $barang,
             ], 201);
         } catch (\Exception $e) {
@@ -133,14 +134,15 @@ class BarangController extends Controller
                     ->performedOn($barang)
                     ->withProperties([
                         'action' => 'update',
+                        'updated_by_name' => $request->user()->nama_lengkap,
                         'updated_fields' => array_merge($updatedData, $request->only('stok_awal')),
                     ])
-                    ->log("Barang '{$barang->nama}' berhasil diperbarui");
+                    ->log("Barang '{$barang->nama}' berhasil diperbarui oleh {$request->user()->nama_lengkap}");
             }
 
             return response()->json([
                 'status' => true,
-                'message' => 'Barang berhasil diperbarui',
+                'message' => "Barang '{$barang->nama}' berhasil diperbarui oleh {$request->user()->name}",
                 'data' => $barang,
             ], 200);
         } catch (\Exception $e) {
@@ -151,9 +153,9 @@ class BarangController extends Controller
             ], 500);
         }
     }
+
     public function addStock(Request $request, $id)
     {
-        // Pastikan hanya Admin atau Staff yang dapat mengakses
         if (!$this->isAdminOrStaff($request)) {
             return response()->json([
                 'status' => false,
@@ -161,7 +163,6 @@ class BarangController extends Controller
             ], 403);
         }
 
-        // Cari barang berdasarkan ID
         $barang = Barang::find($id);
 
         if (!$barang) {
@@ -171,7 +172,6 @@ class BarangController extends Controller
             ], 404);
         }
 
-        // Validasi request input
         $validator = Validator::make($request->all(), [
             'stok' => 'required|integer|min:1',
         ]);

@@ -108,10 +108,16 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::delete('/{id}', [BarangHarianController::class, 'destroy'])->name('barang-harian.destroy');
     });
 
+    Route::prefix('stock')->group(function () {
+        Route::post('/{id}', [BarangController::class, 'addStock'])->name('admin.stock.add');
+    });
+
     // Laporan Barang Management
     Route::prefix('laporan-barang')->group(function () {
         Route::get('/barang', [LaporanBarangController::class, 'generateLaporanBarang']);
         Route::get('/ringkasan-barang', [LaporanBarangController::class, 'ringkasanPergerakanBarang']);
+        Route::get('/download-pdf', [LaporanBarangController::class, 'downloadPDF']);
+        Route::get('/download-all-pdf', [LaporanBarangController::class, 'downloadAllPDF']);
     });
 
 });

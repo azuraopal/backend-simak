@@ -81,6 +81,16 @@
 
 <body>
     <div class="header">
+
+        <?php
+        $path = public_path('images/logo.png');
+        $type = pathinfo($path, PATHINFO_EXTENSION);
+        $data = file_get_contents($path);
+        $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+        ?>
+
+        <img src="{{ $base64 }}" alt="Logo" style="width: 100px; height: auto;">
+
         <h1>Laporan Pergerakan Barang</h1>
         <div class="periode">
             Periode: {{ $tanggalMulai->format('d/m/Y') }} - {{ $tanggalSelesai->format('d/m/Y') }}

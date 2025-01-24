@@ -115,16 +115,19 @@ class UserController extends Controller
 
             if ($currentRole === UserRole::Staff->value) {
                 try {
+                    $userCreating = $request->user();
                     activity()
-                        ->causedBy($request->user())
+                        ->causedBy($userCreating)
                         ->performedOn($user)
                         ->withProperties([
                             'action' => 'store',
+                            'added_by' => $userCreating->id,
+                            'added_by_name' => $userCreating->nama_lengkap ?: $userCreating->email,
                             'user_id' => $user->id,
                             'user_email' => $user->email,
                             'user_role' => $roleValue,
                         ])
-                        ->log("Staff created a new user with role {$roleValue}");
+                        ->log("Staff created a new user with role {$roleValue} oleh " . ($userCreating->nama_lengkap ?: $userCreating->email));
                 } catch (Exception $logError) {
                     \Log::warning("Failed to log activity: " . $logError->getMessage());
                 }
@@ -148,6 +151,7 @@ class UserController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+
     }
 
     /**
@@ -240,15 +244,19 @@ class UserController extends Controller
             }
 
             if ($request->user()->role === UserRole::Staff->value) {
+                $userUpdating = $request->user();
                 activity()
-                    ->causedBy($request->user())
+                    ->causedBy($userUpdating)
                     ->performedOn($user)
                     ->withProperties([
                         'action' => 'update',
                         'updated_fields' => array_keys($validated),
+                        'updated_by' => $userUpdating->id,
+                        'updated_by_name' => $userUpdating->nama_lengkap ?: $userUpdating->email,
                     ])
-                    ->log("Staff updated user with ID {$user->id}");
+                    ->log("Staff updated user with ID {$user->id} oleh " . ($userUpdating->nama_lengkap ?: $userUpdating->email));
             }
+
 
             return response()->json([
                 'status' => true,

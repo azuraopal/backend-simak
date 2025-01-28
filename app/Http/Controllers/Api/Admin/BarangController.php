@@ -235,14 +235,16 @@ class BarangController extends Controller
         return in_array($role->value, ['Admin', 'Staff']);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $barang = Barang::findOrFail($id);
         $barang->delete();
 
+        $user = $request->user();
+
         activity()
             ->causedBy(auth()->user())
-            ->log("Menghapus barang: {$barang->nama}");
+            ->log("Menghapus barang: {$barang->nama} oleh " . ($user->nama_lengkap ?: $user->email) . ".");
 
         return response()->json([
             'status' => true,

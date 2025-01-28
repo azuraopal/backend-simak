@@ -142,7 +142,7 @@ class BarangController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => "Barang '{$barang->nama}' berhasil diperbarui oleh {$request->user()->name}",
+                'message' => "Barang '{$barang->nama}' berhasil diperbarui oleh {$request->user()->nama_lengkap}",
                 'data' => $barang,
             ], 200);
         } catch (\Exception $e) {

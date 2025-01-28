@@ -1,5 +1,6 @@
 <?php
 use App\Http\Controllers\Api\Admin\LaporanBarangController;
+use App\Http\Controllers\Api\Admin\LaporanUpahController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\BarangController;
@@ -119,6 +120,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::get('/download-pdf', [LaporanBarangController::class, 'downloadPDF']);
         Route::get('/download-all-pdf', [LaporanBarangController::class, 'downloadAllPDF']);
     });
+
+    // Laporan Upah Management
+    Route::prefix('laporan-upah')->group(function () {
+        Route::get('/print-all', [LaporanUpahController::class, 'printAll'])->name('laporan-upah.print-all');
+        Route::post('/print-filtered', [LaporanUpahController::class, 'printFiltered'])->name('laporan-upah.print-filtered');
+    });
+
 
 });
 

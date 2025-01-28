@@ -110,7 +110,7 @@ class UpahController extends Controller
                     'date_format:Y-m-d',
                     function ($attribute, $value, $fail) {
                         $date = Carbon::parse($value);
-                        if ($date->isWeekend()) {
+                        if ($date->isWeekend() && config('app.env') === 'production') {
                             $fail('Tanggal mulai tidak boleh di akhir pekan.');
                         }
                         if ($date->gt(Carbon::now())) {
@@ -132,7 +132,7 @@ class UpahController extends Controller
 
             $periode = $this->calculatePeriodDates($request->periode_mulai);
 
-            if (!$this->validatePeriod($periode['start'], $periode['end'], $karyawan)) {
+            if (!$this->validatePeriod($periode['start'], $periode['end'], $karyawan) && config('app.env') === 'production') {
                 return response()->json([
                     'status' => false,
                     'message' => 'Periode tidak valid untuk karyawan ini'

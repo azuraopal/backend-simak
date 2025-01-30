@@ -1,4 +1,5 @@
 <?php
+use App\Enums\UserRole;
 use App\Http\Controllers\Api\Admin\LaporanBarangController;
 use App\Http\Controllers\Api\Admin\LaporanUpahController;
 use Illuminate\Support\Facades\Route;
@@ -29,10 +30,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::get('/logs', function (Request $request) {
         $query = \Spatie\Activitylog\Models\Activity::query();
 
-        $query->whereHas('causer', function ($query) {
-            $query->where('role', 'Staff');
+        $query->whereHas('causer', function ($q) {
+            $q->where('role', UserRole::Staff);
         });
 
+        // Filter berdasarkan action (satu nilai)
         if ($request->has('action')) {
             $query->where('properties->action', $request->action);
         }
@@ -42,14 +44,22 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             $query->whereIn('properties->action', $actions);
         }
 
-        $logs = $query->latest()->get();
+        if ($request->has('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+
+        if ($request->has('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        $logs = $query->latest()->paginate($request->get('per_page', 10));
 
         return response()->json([
             'status' => true,
             'message' => 'Log aktivitas berhasil diambil',
             'data' => $logs,
         ]);
-    })->name('admin.logs');
+    })->middleware(['auth:sanctum', 'admin'])->name('admin.logs');
 
 
 

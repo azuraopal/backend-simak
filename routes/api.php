@@ -145,16 +145,30 @@ Route::prefix('staff')->middleware(['auth:sanctum', 'staff', 'log.activity'])->g
         Route::get('/{id}', [KategoriController::class, 'show'])->name('staff.kategori.show');
     });
 
+    // Karyawan Management
+    Route::prefix('karyawan')->group(function () {
+        Route::post('/', [KaryawanController::class, 'store'])->name('staff.karyawan.store');
+        Route::get('/', [KaryawanController::class, 'index'])->name('staff.karyawan.index');
+        Route::get('/{id}', [KaryawanController::class, 'show'])->name('staff.karyawan.show');
+    });
+
     // Upah Management
     Route::prefix('upah')->group(function () {
         Route::post('/', [UpahController::class, 'store'])->name('staff.upah.store');
+        Route::get('/', [UpahController::class, 'index'])->name('staff.upah.index');
     });
 
     // Barang Management
     Route::prefix('barang')->group(function () {
         Route::post('/', [BarangController::class, 'store'])->name('staff.barang.store');
         Route::get('/', [BarangController::class, 'index'])->name('staff.barang.index');
-        Route::get('/{id}', [BarangController::class, 'show'])->name('staff.barang.show');
+    });
+
+    // Barang Harian Management
+    Route::prefix('barang-harian')->group(function () {
+        Route::get('/', [BarangHarianController::class, 'index'])->name('staff.barang-harian.index');
+        Route::get('/{id}', [BarangHarianController::class, 'show'])->name('staff.barang-harian.show');
+        Route::post('/', [BarangHarianController::class, 'store'])->name('staff.barang-harian.store');
     });
 
     // Stock Management

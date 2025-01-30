@@ -82,7 +82,6 @@ class UpahController extends Controller
         }
     }
 
-
     public function store(Request $request)
     {
         if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
@@ -188,9 +187,27 @@ class UpahController extends Controller
                 $periode['end']
             );
 
+            if (Auth::user()->role === UserRole::Staff) {
+                activity()
+                    ->causedBy($request->user()) 
+                    ->performedOn($upah)
+                    ->withProperties([
+                        'action' => 'store',
+                        'added_by_name' => $request->user()->nama_lengkap,
+                        'karyawan' => $karyawan->user->nama_lengkap,
+                        'minggu_ke' => $mingguKe,
+                        'total_dikerjakan' => $totals->total_dikerjakan,
+                        'total_upah' => $totals->total_upah,
+                        'periode_mulai' => $periode['start'],
+                        'periode_selesai' => $periode['end'],
+                    ])
+                    ->log("Staff '{$request->user()->nama_lengkap}' menambahkan upah untuk karyawan '{$karyawan->user->nama_lengkap}' untuk minggu ke-{$mingguKe}");
+            }
+
+
             return response()->json([
                 'status' => true,
-                'message' => 'Data upah berhasil ditambahkan',
+                'message' => "Data upah untuk karyawan '{$karyawan->user->nama_lengkap}' berhasil ditambahkan",
                 'data' => [
                     'upah' => $upah,
                     'detail_perhitungan' => $detailPerhitungan,

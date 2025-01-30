@@ -23,7 +23,7 @@ class UpahController extends Controller
         try {
             $upahQuery = Upah::with(['karyawan.user:id,nama_lengkap,email,created_at']);
 
-            if (Auth::user()->role !== UserRole::Admin) {
+            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
                 $karyawan = Karyawan::where('users_id', Auth::id())->first();
 
                 if (!$karyawan) {

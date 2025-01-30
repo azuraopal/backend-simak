@@ -27,7 +27,7 @@ class BarangHarianController extends Controller
         try {
             $query = BarangHarian::with(['barang', 'karyawan.user']);
 
-            if (Auth::user()->role !== UserRole::Admin) {
+            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
                 $karyawan = Karyawan::where('users_id', Auth::id())->first();
                 if (!$karyawan) {
                     return response()->json([
@@ -60,7 +60,8 @@ class BarangHarianController extends Controller
 
     public function store(Request $request)
     {
-        if (Auth::user()->role !== UserRole::Admin) {
+
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized access'
@@ -127,7 +128,7 @@ class BarangHarianController extends Controller
                 ], 404);
             }
 
-            if (Auth::user()->role !== UserRole::Admin) {
+            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
                 $karyawan = Karyawan::where('users_id', Auth::id())->first();
                 if (!$karyawan || $barangHarian->karyawan_id !== $karyawan->id) {
                     return response()->json([

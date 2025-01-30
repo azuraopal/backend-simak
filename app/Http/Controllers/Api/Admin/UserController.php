@@ -35,7 +35,6 @@ class UserController extends Controller
     {
         $currentRole = $request->user()->role;
 
-
         if ($currentRole instanceof UserRole) {
             $currentRole = $currentRole->value;
         }
@@ -69,7 +68,15 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
-            $password = Str::random(8);
+            if ($request->role === UserRole::Karyawan->value) {
+                $password = Str::random(12);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Hanya pengguna dengan peran Karyawan yang otomatis dibuatkan password.',
+                ], 422);
+            }
+
             $roleValue = $request->role instanceof UserRole ? $request->role->value : $request->role;
             $defaultFotoProfile = config('constants.default_profile_picture', 'default.jpg');
 
@@ -127,7 +134,7 @@ class UserController extends Controller
                             'user_email' => $user->email,
                             'user_role' => $roleValue,
                         ])
-                        ->log("Staff created a new user with role {$roleValue} oleh " . ($userCreating->nama_lengkap ?: $userCreating->email));
+                        ->log("Staff '{$userCreating->nama_lengkap}' created a new Karyawan '{$user->nama_lengkap}' with email '{$user->email}'");
                 } catch (Exception $logError) {
                     \Log::warning("Failed to log activity: " . $logError->getMessage());
                 }
@@ -137,7 +144,7 @@ class UserController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => "User dengan peran {$roleValue} berhasil didaftarkan oleh {$currentRole}",
+                'message' => "User dengan peran {$roleValue} berhasil didaftarkan oleh {$currentRole}, password telah dikirim ke email.",
                 'data' => $user,
             ], 201);
 
@@ -151,7 +158,6 @@ class UserController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
-
     }
 
     /**

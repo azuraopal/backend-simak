@@ -23,6 +23,14 @@ class KaryawanController extends Controller
 
     public function store(Request $request)
     {
+
+        if (!$this->isAdminOrStaff($request)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized. Only Admin or Staff can perform this action.',
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'users_id' => 'required|exists:users,id',
             'nama' => 'required|string|max:100',
@@ -188,6 +196,12 @@ class KaryawanController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function isAdminOrStaff($request): bool
+    {
+        $role = $request->user()->role;
+        return in_array($role->value, ['Admin', 'Staff']);
     }
 
     public function search(Request $request)

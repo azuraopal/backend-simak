@@ -14,16 +14,31 @@ class KaryawanController extends Controller
 {
     public function index()
     {
-        $karyawan = Karyawan::with('user')->get();
-        return response()->json([
-            'status' => true,
-            'data' => $karyawan
-        ]);
+        try {
+            $karyawan = Karyawan::with('user')->get();
+
+            if ($karyawan->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data karyawan tidak ditemukan'
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'data' => $karyawan
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
+
 
     public function store(Request $request)
     {
-
         if (!$this->isAdminOrStaff($request)) {
             return response()->json([
                 'status' => false,
@@ -76,6 +91,23 @@ class KaryawanController extends Controller
                 'email' => $user->email,
             ]);
 
+            if ($request->user()->role === UserRole::Staff) {
+                activity()
+                    ->causedBy($request->user())
+                    ->performedOn($karyawan)
+                    ->withProperties([
+                        'action' => 'store',
+                        'added_by_name' => $request->user()->nama_lengkap,
+                        'karyawan_data' => [
+                            'nama' => $karyawan->nama,
+                            'email' => $karyawan->email,
+                            'pekerjaan' => $karyawan->pekerjaan,
+                            'tanggal_lahir' => $karyawan->tanggal_lahir,
+                        ]
+                    ])
+                    ->log("Staff '{$request->user()->nama_lengkap}' menambahkan data karyawan baru '{$karyawan->nama}'");
+            }
+
             DB::commit();
 
             return response()->json([
@@ -93,6 +125,7 @@ class KaryawanController extends Controller
             ], 500);
         }
     }
+
 
     public function show($id)
     {
@@ -113,6 +146,13 @@ class KaryawanController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (!$this->isAdminOrStaff($request)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized. Only Admin or Staff can perform this action.',
+            ], 403);
+        }
+
         $karyawan = Karyawan::find($id);
 
         if (!$karyawan) {
@@ -140,6 +180,15 @@ class KaryawanController extends Controller
 
         DB::beginTransaction();
         try {
+            $oldData = [
+                'nama' => $karyawan->nama,
+                'tanggal_lahir' => $karyawan->tanggal_lahir,
+                'pekerjaan' => $karyawan->pekerjaan,
+                'alamat' => $karyawan->alamat,
+                'telepon' => $karyawan->telepon,
+                'email' => $karyawan->user->email
+            ];
+
             $karyawan->update($request->all());
 
             if ($request->has('email') || $request->has('nama')) {
@@ -147,6 +196,25 @@ class KaryawanController extends Controller
                     'email' => $request->email ?? $karyawan->user->email,
                     'nama_lengkap' => $request->nama ?? $karyawan->user->nama_lengkap
                 ]);
+            }
+
+            $changes = array_diff_assoc(array_intersect_key($request->all(), $oldData), $oldData);
+
+            if ($request->user()->role === UserRole::Staff) {
+                if ($karyawan instanceof Karyawan) {
+                    activity()
+                        ->causedBy($request->user())
+                        ->performedOn($karyawan)
+                        ->withProperties([
+                            'action' => 'update',
+                            'updated_by_name' => $request->user()->nama_lengkap,
+                            'updated_by_role' => $request->user()->role,
+                            'karyawan' => $karyawan->nama,
+                            'old_data' => $oldData,
+                            'changes' => $changes
+                        ])
+                        ->log("Staff '{$request->user()->nama_lengkap}' memperbarui data karyawan '{$karyawan->nama}'");
+                }
             }
 
             DB::commit();
@@ -166,8 +234,15 @@ class KaryawanController extends Controller
             ], 500);
         }
     }
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        if (!$this->isAdminOrStaff($request)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized. Only Admin or Staff can perform this action.',
+            ], 403);
+        }
+
         $karyawan = Karyawan::find($id);
 
         if (!$karyawan) {
@@ -179,6 +254,27 @@ class KaryawanController extends Controller
 
         DB::beginTransaction();
         try {
+            $karyawanData = [
+                'nama' => $karyawan->nama,
+                'email' => $karyawan->email,
+                'pekerjaan' => $karyawan->pekerjaan
+            ];
+
+            if ($request->user()->role === UserRole::Staff) {
+                if ($karyawan instanceof Karyawan) {
+                    activity()
+                        ->causedBy($request->user())
+                        ->performedOn($karyawan)
+                        ->withProperties([
+                            'action' => 'delete',
+                            'deleted_by_name' => $request->user()->nama_lengkap,
+                            'deleted_by_role' => $request->user()->role,
+                            'karyawan_data' => $karyawanData
+                        ])
+                        ->log("{$request->user()->role} '{$request->user()->nama_lengkap}' menghapus data karyawan '{$karyawan->nama}'");
+                }
+            }
+
             $karyawan->delete();
 
             DB::commit();
@@ -197,6 +293,7 @@ class KaryawanController extends Controller
             ], 500);
         }
     }
+
 
     private function isAdminOrStaff($request): bool
     {

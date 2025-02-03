@@ -6,14 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Models\Kategori;
 use Illuminate\Http\Request;
 use App\Enums\UserRole;
+use Validator;
 
 class KategoriController extends Controller
 {
-    private function validateRole(Request $request, array $allowedRoles): void
+    private function validateRole(Request $request, array $allowedRoles): bool
     {
-        if (!in_array($request->user()?->role, $allowedRoles)) {
-            abort(403, 'Unauthorized access');
+        $userRole = $request->user()?->role;
+
+        if (is_string($userRole)) {
+            $userRole = strtolower($userRole);
+            $allowedRoles = array_map(function ($role) {
+                return strtolower($role->value);
+            }, $allowedRoles);
         }
+
+        return in_array($userRole, $allowedRoles);
     }
 
     public function index(Request $request)
@@ -29,21 +37,54 @@ class KategoriController extends Controller
 
     public function store(Request $request)
     {
+        if (!$this->validateRole($request, [UserRole::Admin, UserRole::Staff])) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized. Only Admin or Staff can perform this action.',
+            ], 403);
+        }
 
-        $this->validateRole($request, [UserRole::Admin, UserRole::Staff]);
-
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:70',
             'deskripsi' => 'nullable|string|max:255',
         ]);
 
-        $kategori = Kategori::create($validated);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation Error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Kategori berhasil dibuat',
-            'data' => $kategori
-        ], 201);
+        try {
+            $kategori = Kategori::create($validator->validated());
+
+            if ($request->user()->role === UserRole::Staff) {
+                activity()
+                    ->causedBy($request->user())
+                    ->performedOn($kategori)
+                    ->withProperties([
+                        'action' => 'store',
+                        'added_by_name' => $request->user()->nama_lengkap,
+                        'nama_kategori' => $kategori->nama,
+                        'deskripsi' => $kategori->deskripsi,
+                    ])
+                    ->log("Kategori '{$kategori->nama}' berhasil ditambahkan oleh {$request->user()->nama_lengkap}");
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kategori berhasil dibuat',
+                'data' => $kategori
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Server Error',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function show(Request $request, $id)
@@ -69,51 +110,119 @@ class KategoriController extends Controller
 
     public function update(Request $request, $id)
     {
-        $this->validateRole($request, [UserRole::Admin]);
-
-        $kategori = Kategori::find($id);
-
-        if (!$kategori) {
+        if (!$this->validateRole($request, [UserRole::Admin, UserRole::Staff])) {
             return response()->json([
-                'success' => false,
-                'message' => 'Kategori tidak ditemukan',
-                'data' => null
-            ], 404);
+                'status' => false,
+                'message' => 'Unauthorized. Only Admin can perform this action.',
+            ], 403);
         }
 
-        $validated = $request->validate([
-            'nama' => 'required|string|max:100',
-            'deskripsi' => 'nullable|string|max:255',
-        ]);
+        try {
+            $kategori = Kategori::find($id);
 
-        $kategori->update($validated);
+            if (!$kategori) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kategori tidak ditemukan',
+                    'data' => null
+                ], 404);
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Kategori berhasil diupdate',
-            'data' => $kategori
-        ]);
+            $validator = Validator::make($request->all(), [
+                'nama' => 'required|string|max:100',
+                'deskripsi' => 'nullable|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validation Error',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $oldData = $kategori->toArray();
+
+            $kategori->update($validator->validated());
+
+            if ($request->user()->role === UserRole::Staff) {
+                if ($kategori instanceof Kategori) {
+                    activity()
+                        ->causedBy($request->user())
+                        ->performedOn($kategori)
+                        ->withProperties([
+                            'action' => 'update',
+                            'updated_by_name' => $request->user()->nama_lengkap,
+                            'old_data' => $oldData,
+                            'new_data' => $kategori->toArray(),
+                        ])
+                        ->log("Kategori '{$kategori->nama}' diupdate oleh {$request->user()->nama_lengkap}");
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kategori berhasil diupdate',
+                'data' => $kategori
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Server Error',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function destroy(Request $request, $id)
     {
-        $this->validateRole($request, [UserRole::Admin]);
-
-        $kategori = Kategori::find($id);
-
-        if (!$kategori) {
+        if (!$this->validateRole($request, [UserRole::Admin])) {
             return response()->json([
-                'success' => false,
-                'message' => 'Kategori tidak ditemukan',
-                'data' => null
-            ], 404);
+                'status' => false,
+                'message' => 'Unauthorized. Only Admin can perform this action.',
+            ], 403);
         }
 
-        $kategori->delete();
+        try {
+            $kategori = Kategori::find($id);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Kategori berhasil dihapus',
-        ], 200);
+            if (!$kategori) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kategori tidak ditemukan',
+                    'data' => null
+                ], 404);
+            }
+
+            $kategoriData = $kategori->toArray();
+
+            if ($request->user()->role === UserRole::Staff) {
+                if ($kategori instanceof Kategori) {
+                    activity()
+                        ->causedBy($request->user())
+                        ->performedOn($kategori)
+                        ->withProperties([
+                            'action' => 'delete',
+                            'deleted_by_name' => $request->user()->nama_lengkap,
+                            'kategori_data' => $kategoriData,
+                        ])
+                        ->log("Kategori '{$kategori->nama}' dihapus oleh {$request->user()->nama_lengkap}");
+                }
+            }
+
+            $kategori->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kategori berhasil dihapus',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Server Error',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+
 }

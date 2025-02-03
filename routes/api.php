@@ -26,7 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // Routes (Admin)
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
 
-    // Acitivity Log
+    // Activity Log
     Route::get('/logs', function (Request $request) {
         $query = \Spatie\Activitylog\Models\Activity::query();
 
@@ -34,7 +34,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             $q->where('role', UserRole::Staff);
         });
 
-        // Filter berdasarkan action (satu nilai)
         if ($request->has('action')) {
             $query->where('properties->action', $request->action);
         }
@@ -42,6 +41,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         if ($request->has('actions')) {
             $actions = explode(',', $request->actions);
             $query->whereIn('properties->action', $actions);
+        }
+
+        if ($request->has('model')) {
+            $modelClass = 'App\\Models\\' . ucfirst($request->model);
+            $query->where('subject_type', $modelClass);
         }
 
         if ($request->has('start_date')) {
@@ -60,8 +64,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             'data' => $logs,
         ]);
     })->middleware(['auth:sanctum', 'admin'])->name('admin.logs');
-
-
 
     // User Management
     Route::prefix('users')->group(function () {

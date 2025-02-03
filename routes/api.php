@@ -154,6 +154,7 @@ Route::prefix('staff')->middleware(['auth:sanctum', 'staff', 'log.activity'])->g
     Route::prefix('kategori')->group(function () {
         Route::post('/', [KategoriController::class, 'store'])->name('staff.kategori.store');
         Route::get('/', [KategoriController::class, 'index'])->name('staff.kategori.index');
+        Route::put('/{id}', [KategoriController::class, 'update'])->name('staff.kategori.update');
         Route::get('/{id}', [KategoriController::class, 'show'])->name('staff.kategori.show');
     });
 
@@ -161,6 +162,7 @@ Route::prefix('staff')->middleware(['auth:sanctum', 'staff', 'log.activity'])->g
     Route::prefix('karyawan')->group(function () {
         Route::post('/', [KaryawanController::class, 'store'])->name('staff.karyawan.store');
         Route::get('/', [KaryawanController::class, 'index'])->name('staff.karyawan.index');
+        Route::get('/', [KaryawanController::class, 'update'])->name('staff.karyawan.update');
         Route::get('/{id}', [KaryawanController::class, 'show'])->name('staff.karyawan.show');
     });
 
@@ -178,9 +180,10 @@ Route::prefix('staff')->middleware(['auth:sanctum', 'staff', 'log.activity'])->g
 
     // Barang Harian Management
     Route::prefix('barang-harian')->group(function () {
-        Route::get('/', [BarangHarianController::class, 'index'])->name('staff.barang-harian.index');
-        Route::get('/{id}', [BarangHarianController::class, 'show'])->name('staff.barang-harian.show');
         Route::post('/', [BarangHarianController::class, 'store'])->name('staff.barang-harian.store');
+        Route::get('/', [BarangHarianController::class, 'index'])->name('staff.barang-harian.index');
+        Route::get('/', [BarangHarianController::class, 'update'])->name('staff.barang-harian.update');
+        Route::get('/{id}', [BarangHarianController::class, 'show'])->name('staff.barang-harian.show');
     });
 
     // Stock Management

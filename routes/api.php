@@ -162,7 +162,7 @@ Route::prefix('staff')->middleware(['auth:sanctum', 'staff', 'log.activity'])->g
     Route::prefix('karyawan')->group(function () {
         Route::post('/', [KaryawanController::class, 'store'])->name('staff.karyawan.store');
         Route::get('/', [KaryawanController::class, 'index'])->name('staff.karyawan.index');
-        Route::get('/{id}', [KaryawanController::class, 'update'])->name('staff.karyawan.update');
+        Route::put('/{id}', [KaryawanController::class, 'update'])->name('staff.karyawan.update');
         Route::get('/{id}', [KaryawanController::class, 'show'])->name('staff.karyawan.show');
     });
 
@@ -176,7 +176,7 @@ Route::prefix('staff')->middleware(['auth:sanctum', 'staff', 'log.activity'])->g
     Route::prefix('barang')->group(function () {
         Route::post('/', [BarangController::class, 'store'])->name('staff.barang.store');
         Route::get('/', [BarangController::class, 'index'])->name('staff.barang.index');
-        Route::post('/{id}', [BarangController::class, 'update'])->name('staff.barang.update');
+        Route::put('/{id}', [BarangController::class, 'update'])->name('staff.barang.update');
         Route::post('/{id}', [BarangController::class, 'show'])->name('staff.barang.show');
     });
 
@@ -184,7 +184,7 @@ Route::prefix('staff')->middleware(['auth:sanctum', 'staff', 'log.activity'])->g
     Route::prefix('barang-harian')->group(function () {
         Route::post('/', [BarangHarianController::class, 'store'])->name('staff.barang-harian.store');
         Route::get('/', [BarangHarianController::class, 'index'])->name('staff.barang-harian.index');
-        Route::get('/{id}', [BarangHarianController::class, 'update'])->name('staff.barang-harian.update');
+        Route::put('/{id}', [BarangHarianController::class, 'update'])->name('staff.barang-harian.update');
         Route::get('/{id}', [BarangHarianController::class, 'show'])->name('staff.barang-harian.show');
     });
 

@@ -36,7 +36,6 @@ class KaryawanController extends Controller
         }
     }
 
-
     public function store(Request $request)
     {
         if (!$this->isAdminOrStaff($request)) {
@@ -48,7 +47,6 @@ class KaryawanController extends Controller
 
         $validator = Validator::make($request->all(), [
             'users_id' => 'required|exists:users,id',
-            'nama' => 'required|string|max:100',
             'tanggal_lahir' => 'required|date',
             'pekerjaan' => 'required|string|max:255',
             'alamat' => 'required|string',
@@ -79,16 +77,16 @@ class KaryawanController extends Controller
 
         DB::beginTransaction();
         try {
-            $user = User::findOrFail($request->users_id);
+            $selectedUser = User::findOrFail($request->users_id);
 
             $karyawan = Karyawan::create([
                 'users_id' => $request->users_id,
-                'nama' => $request->nama,
+                'nama' => $selectedUser->nama_lengkap,
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'pekerjaan' => $request->pekerjaan,
                 'alamat' => $request->alamat,
                 'telepon' => $request->telepon,
-                'email' => $user->email,
+                'email' => $selectedUser->email,
             ]);
 
             if ($request->user()->role === UserRole::Staff) {

@@ -16,6 +16,14 @@ class BarangController extends Controller
     {
         $barang = Barang::all();
 
+        if ($barang->isEmpty()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Data barang tidak ditemukan',
+                'data' => [],
+            ], 404);
+        }
+
         return response()->json([
             'status' => true,
             'message' => 'Data barang berhasil diambil',

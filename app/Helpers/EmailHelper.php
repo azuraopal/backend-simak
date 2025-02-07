@@ -61,4 +61,50 @@ class EmailHelper
             return false;
         }
     }
+
+    public static function sendPasswordResetLink($email, $nama_lengkap, $resetLink)
+    {
+        $mail = new PHPMailer(true);
+
+        try {
+            $mail->SMTPDebug = SMTP::DEBUG_SERVER;
+            $mail->Debugoutput = function ($str, $level) {
+                Log::info("SMTP Debug: $str");
+            };
+
+            $mail->isSMTP();
+            $mail->Host = env('MAIL_HOST');
+            $mail->SMTPAuth = true;
+            $mail->Username = env('MAIL_USERNAME');
+            $mail->Password = env('MAIL_PASSWORD');
+            $mail->SMTPSecure = env('MAIL_ENCRYPTION');
+            $mail->Port = env('MAIL_PORT');
+
+            $mail->CharSet = PHPMailer::CHARSET_UTF8;
+
+            $mail->setFrom(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+            $mail->addAddress($email, $nama_lengkap);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Reset Password Akun Anda';
+            $mail->Body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background-color: #f9f9f9;'>
+            <h1 style='color: #333; text-align: center;'>Lupa Password?</h1>
+            <p style='font-size: 16px; color: #555;'>Jika Anda merasa ini adalah permintaan yang sah, klik link berikut untuk mengatur ulang password Anda:</p>
+            <p style='text-align: center; font-size: 16px;'>
+                <a href='$resetLink' style='background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Reset Password</a>
+            </p>
+            <p style='font-size: 14px; color: #777;'>Jika Anda tidak merasa ini adalah permintaan yang sah, abaikan email ini.</p>
+        </div>
+    ";
+
+            $mail->send();
+            Log::info("Email reset password berhasil dikirim ke $email");
+            return true;
+        } catch (Exception $e) {
+            Log::error("Email gagal dikirim: {$mail->ErrorInfo}");
+            return false;
+        }
+    }
+
 }

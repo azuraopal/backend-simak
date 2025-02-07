@@ -189,7 +189,7 @@ class UpahController extends Controller
 
             if (Auth::user()->role === UserRole::Staff) {
                 activity()
-                    ->causedBy($request->user()) 
+                    ->causedBy($request->user())
                     ->performedOn($upah)
                     ->withProperties([
                         'action' => 'store',
@@ -226,6 +226,13 @@ class UpahController extends Controller
 
     public function show($id)
     {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized access'
+            ], 403);
+        }
+
         try {
             $upah = Upah::with(['karyawan.user'])->findOrFail($id);
 

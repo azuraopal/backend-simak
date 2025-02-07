@@ -14,13 +14,16 @@ use Illuminate\Http\Request;
 
 // Auth Routes
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
-Route::get('/profile', [AuthController::class, 'profile'])->middleware('auth:sanctum');
+Route::post('/users/forgot-password', [UserController::class, 'sendResetLinkEmail']);
+Route::post('/users/reset-password', [UserController::class, 'reset']);
 
 // Public Routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users/upload-photo', [UserController::class, 'uploadPhoto']);
     Route::post('/users/change-password', [UserController::class, 'changePassword']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+Route::get('/profile', [AuthController::class, 'profile']);
+
 });
 
 // Routes (Admin)

@@ -169,6 +169,7 @@ Route::prefix('staff')->middleware(['auth:sanctum', 'staff', 'log.activity'])->g
     // Upah Management
     Route::prefix('upah')->group(function () {
         Route::post('/', [UpahController::class, 'store'])->name('staff.upah.store');
+        Route::get('/{id}', [UpahController::class, 'show'])->name('staff.upah.show');
         Route::get('/', [UpahController::class, 'index'])->name('staff.upah.index');
     });
 

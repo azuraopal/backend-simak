@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Helpers\EmailHelper;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Carbon\Carbon;
 use DB;
 use Exception;
 use Illuminate\Http\Request;
@@ -345,4 +346,90 @@ class UserController extends Controller
         ], 200);
     }
 
+    public function sendResetLinkEmail(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Email tidak ditemukan'
+            ], 404);
+        }
+
+        $plainToken = Str::random(60);
+        $hashedToken = hash('sha256', $plainToken);
+
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $user->email],
+            ['token' => $hashedToken, 'created_at' => now()]
+        );
+
+        $resetLink = config('app.frontend_url') .
+            '/reset-password?token=' . $plainToken .
+            '&email=' . urlencode($user->email);
+
+        $emailSent = EmailHelper::sendPasswordResetLink(
+            $user->email,
+            $user->nama_lengkap,
+            $resetLink
+        );
+
+        if (!$emailSent) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal mengirim email reset password'
+            ], 500);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Link reset password telah dikirim ke email Anda'
+        ]);
+    }
+
+    public function reset(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $hashedToken = hash('sha256', $request->token);
+
+        $record = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->where('token', $hashedToken)
+            ->first();
+
+        if (!$record) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Token tidak valid'
+            ], 400);
+        }
+
+        $createdAt = Carbon::parse($record->created_at);
+        if ($createdAt->addMinutes(60)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            return response()->json([
+                'status' => false,
+                'message' => 'Token telah kadaluarsa'
+            ], 400);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password berhasil direset'
+        ]);
+    }
 }

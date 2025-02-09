@@ -30,7 +30,7 @@ class StaffProduksi extends Model
     {
         return $this->belongsTo(User::class, 'users_id', 'id');
     }
-    
+
     public function upah()
     {
         return $this->hasMany(Upah::class, 'staff_produksi_id');

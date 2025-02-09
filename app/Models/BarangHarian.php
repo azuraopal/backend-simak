@@ -20,7 +20,7 @@ class BarangHarian extends Model
         return $this->belongsTo(Barang::class, 'barang_id', 'id');
     }
 
-    public function StaffProduksi()
+    public function staff_produksi()
     {
         return $this->belongsTo(StaffProduksi::class, 'staff_produksi_id', 'id');
     }

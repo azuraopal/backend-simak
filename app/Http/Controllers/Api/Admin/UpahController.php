@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\UserRole;
-use App\Models\Karyawan;
+use App\Models\StaffProduksi;
 use App\Models\Upah;
 use App\Models\BarangHarian;
 use App\Models\Barang;
@@ -21,19 +21,19 @@ class UpahController extends Controller
     public function index()
     {
         try {
-            $upahQuery = Upah::with(['karyawan.user:id,nama_lengkap,email,created_at']);
+            $upahQuery = Upah::with(['staff_produksi.user:id,nama_lengkap,email,created_at']);
 
-            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
-                $karyawan = Karyawan::where('users_id', Auth::id())->first();
+            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
+                $staffProduksi = StaffProduksi::where('users_id', Auth::id())->first();
 
-                if (!$karyawan) {
+                if (!$staffProduksi) {
                     return response()->json([
                         'status' => false,
-                        'message' => 'Data karyawan tidak ditemukan'
+                        'message' => 'Data Staff Produksi tidak ditemukan'
                     ], 404);
                 }
 
-                $upahQuery->where('karyawan_id', $karyawan->id);
+                $upahQuery->where('staffProduksi_id', $staffProduksi->id);
             }
 
             $upahList = $upahQuery->orderBy('periode_mulai', 'desc')->get();
@@ -48,7 +48,7 @@ class UpahController extends Controller
             $upahList = $upahList->map(function ($upah) {
                 $detailPerhitungan = DB::table('barang_harian as bh')
                     ->join('barang as b', 'b.id', '=', 'bh.barang_id')
-                    ->where('bh.karyawan_id', $upah->karyawan_id)
+                    ->where('bh.staff_produksi_id', $upah->staff_produksi_id)
                     ->whereBetween('bh.tanggal', [$upah->periode_mulai, $upah->periode_selesai])
                     ->select(
                         'b.nama as nama_barang',
@@ -62,7 +62,7 @@ class UpahController extends Controller
 
                 return [
                     'id' => $upah->id,
-                    'karyawan' => $upah->karyawan,
+                    'staff_produksi' => $upah->staff_produksi,
                     'minggu_ke' => $upah->minggu_ke,
                     'total_dikerjakan' => $upah->total_dikerjakan,
                     'total_upah' => $upah->total_upah,
@@ -84,7 +84,7 @@ class UpahController extends Controller
 
     public function store(Request $request)
     {
-        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized access'
@@ -93,13 +93,13 @@ class UpahController extends Controller
 
         try {
             $validator = Validator::make($request->all(), [
-                'karyawan_id' => [
+                'staff_produksi_id' => [
                     'required',
-                    'exists:karyawan,id',
+                    'exists:staff_produksi,id',
                     function ($attribute, $value, $fail) {
-                        $karyawan = Karyawan::find($value);
-                        if (!$karyawan || !$karyawan->user) {
-                            $fail('Data karyawan tidak lengkap atau tidak valid.');
+                        $staffProduksi = StaffProduksi::find($value);
+                        if (!$staffProduksi || !$staffProduksi->user) {
+                            $fail('Data Staff Produksi tidak lengkap atau tidak valid.');
                         }
                     },
                 ],
@@ -127,18 +127,18 @@ class UpahController extends Controller
                 ], 422);
             }
 
-            $karyawan = Karyawan::with('user')->findOrFail($request->karyawan_id);
+            $staffProduksi = StaffProduksi::with('user')->findOrFail($request->staff_produksi_id);
 
             $periode = $this->calculatePeriodDates($request->periode_mulai);
 
-            if (!$this->validatePeriod($periode['start'], $periode['end'], $karyawan) && config('app.env') === 'production') {
+            if (!$this->validatePeriod($periode['start'], $periode['end'], $staffProduksi) && config('app.env') === 'production') {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Periode tidak valid untuk karyawan ini'
+                    'message' => 'Periode tidak valid untuk Staff Produksi ini'
                 ], 422);
             }
 
-            $existingUpah = $this->checkExistingUpah($karyawan->id, $periode['start'], $periode['end']);
+            $existingUpah = $this->checkExistingUpah($staffProduksi->id, $periode['start'], $periode['end']);
             if ($existingUpah) {
                 return response()->json([
                     'status' => false,
@@ -147,13 +147,13 @@ class UpahController extends Controller
             }
 
             $mingguKe = $this->calculateWeekNumber(
-                $karyawan->user->created_at,
+                $staffProduksi->user->created_at,
                 $periode['start']
             );
 
 
             $barangHarian = $this->validateBarangHarian(
-                $karyawan->id,
+                $staffProduksi->id,
                 $periode['start'],
                 $periode['end']
             );
@@ -166,13 +166,13 @@ class UpahController extends Controller
             }
 
             $totals = $this->calculateTotals(
-                $karyawan->id,
+                $staffProduksi->id,
                 $periode['start'],
                 $periode['end']
             );
 
             $upah = Upah::create([
-                'karyawan_id' => $karyawan->id,
+                'staff_produksi_id' => $staffProduksi->id,
                 'minggu_ke' => $mingguKe,
                 'total_dikerjakan' => $totals->total_dikerjakan,
                 'total_upah' => $totals->total_upah,
@@ -182,32 +182,32 @@ class UpahController extends Controller
 
 
             $detailPerhitungan = $this->getDetailPerhitungan(
-                $karyawan->id,
+                $staffProduksi->id,
                 $periode['start'],
                 $periode['end']
             );
 
-            if (Auth::user()->role === UserRole::Staff) {
+            if (Auth::user()->role === UserRole::StaffAdministrasi) {
                 activity()
                     ->causedBy($request->user())
                     ->performedOn($upah)
                     ->withProperties([
                         'action' => 'store',
                         'added_by_name' => $request->user()->nama_lengkap,
-                        'karyawan' => $karyawan->user->nama_lengkap,
+                        'staff_produksi' => $staffProduksi->user->nama_lengkap,
                         'minggu_ke' => $mingguKe,
                         'total_dikerjakan' => $totals->total_dikerjakan,
                         'total_upah' => $totals->total_upah,
                         'periode_mulai' => $periode['start'],
                         'periode_selesai' => $periode['end'],
                     ])
-                    ->log("Staff '{$request->user()->nama_lengkap}' menambahkan upah untuk karyawan '{$karyawan->user->nama_lengkap}' untuk minggu ke-{$mingguKe}");
+                    ->log("Staff '{$request->user()->nama_lengkap}' menambahkan upah untuk Staff Produksi '{$staffProduksi->user->nama_lengkap}' untuk minggu ke-{$mingguKe}");
             }
 
 
             return response()->json([
                 'status' => true,
-                'message' => "Data upah untuk karyawan '{$karyawan->user->nama_lengkap}' berhasil ditambahkan",
+                'message' => "Data upah untuk Staff Produksi '{$staffProduksi->user->nama_lengkap}' berhasil ditambahkan",
                 'data' => [
                     'upah' => $upah,
                     'detail_perhitungan' => $detailPerhitungan,
@@ -226,7 +226,7 @@ class UpahController extends Controller
 
     public function show($id)
     {
-        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized access'
@@ -234,7 +234,7 @@ class UpahController extends Controller
         }
 
         try {
-            $upah = Upah::with(['karyawan.user'])->findOrFail($id);
+            $upah = Upah::with(['staffProduksi.user'])->findOrFail($id);
 
             $detailPerhitungan = $upah->detailPerhitungan()
                 ->whereDate('barang_harian.tanggal', '>=', $upah->periode_mulai)
@@ -354,10 +354,10 @@ class UpahController extends Controller
         ];
     }
 
-    private function validatePeriod($startDate, $endDate, $karyawan)
+    private function validatePeriod($startDate, $endDate, $staff_produksi)
     {
         $start = Carbon::parse($startDate);
-        $joinDate = Carbon::parse($karyawan->user->created_at);
+        $joinDate = Carbon::parse($staff_produksi->user->created_at);
 
 
         if ($start->lt($joinDate)) {
@@ -367,18 +367,18 @@ class UpahController extends Controller
         return true;
     }
 
-    private function checkExistingUpah($karyawanId, $startDate, $endDate)
+    private function checkExistingUpah($staff_produksiId, $startDate, $endDate)
     {
-        return Upah::where('karyawan_id', $karyawanId)
+        return Upah::where('staff_produksi_id', $staff_produksiId)
             ->where(function ($query) use ($startDate, $endDate) {
                 $query->whereBetween('periode_mulai', [$startDate, $endDate])
                     ->orWhereBetween('periode_selesai', [$startDate, $endDate]);
             })->first();
     }
 
-    private function validateBarangHarian($karyawanId, $startDate, $endDate)
+    private function validateBarangHarian($staff_produksiId, $startDate, $endDate)
     {
-        $barangHarian = BarangHarian::where('karyawan_id', $karyawanId)
+        $barangHarian = BarangHarian::where('staff_produksi_id', $staff_produksiId)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->count();
 
@@ -392,11 +392,11 @@ class UpahController extends Controller
         return ['status' => true];
     }
 
-    private function calculateTotals($karyawanId, $startDate, $endDate)
+    private function calculateTotals($staff_produksiId, $startDate, $endDate)
     {
         return DB::table('barang_harian as bh')
             ->join('barang as b', 'b.id', '=', 'bh.barang_id')
-            ->where('bh.karyawan_id', $karyawanId)
+            ->where('bh.staff_produksi_id', $staff_produksiId)
             ->whereBetween('bh.tanggal', [$startDate, $endDate])
             ->select(
                 DB::raw('COALESCE(SUM(bh.jumlah_dikerjakan), 0) as total_dikerjakan'),
@@ -405,11 +405,11 @@ class UpahController extends Controller
             ->first();
     }
 
-    private function getDetailPerhitungan($karyawanId, $startDate, $endDate)
+    private function getDetailPerhitungan($staff_produksiId, $startDate, $endDate)
     {
         return DB::table('barang_harian as bh')
             ->join('barang as b', 'b.id', '=', 'bh.barang_id')
-            ->where('bh.karyawan_id', $karyawanId)
+            ->where('bh.staff_produksi_id', $staff_produksiId)
             ->whereBetween('bh.tanggal', [$startDate, $endDate])
             ->select(
                 'b.nama as nama_barang',

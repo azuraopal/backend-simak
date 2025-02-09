@@ -22,7 +22,7 @@ class LaporanUpahController extends Controller
         }
 
         try {
-            $upahList = Upah::with(['karyawan.user:id,nama_lengkap,email,created_at'])
+            $upahList = Upah::with(['staff_produksi.user:id,nama_lengkap,email,created_at'])
                 ->orderBy('periode_mulai', 'desc')
                 ->get();
 
@@ -61,7 +61,7 @@ class LaporanUpahController extends Controller
                 ], 422);
             }
 
-            $upahList = Upah::with(['karyawan.user:id,nama_lengkap,email,created_at'])
+            $upahList = Upah::with(['staff_produksi.user:id,nama_lengkap,email,created_at'])
                 ->whereBetween('periode_mulai', [$request->periode_mulai, $request->periode_selesai])
                 ->orderBy('periode_mulai', 'desc')
                 ->get();

@@ -69,12 +69,12 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($request->role === UserRole::Karyawan->value) {
+            if ($request->role === UserRole::StaffProduksi->value) {
                 $password = Str::random(12);
             } else {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Hanya pengguna dengan peran Karyawan yang otomatis dibuatkan password.',
+                    'message' => 'Hanya pengguna dengan peran Staff Produksi yang otomatis dibuatkan password.',
                 ], 422);
             }
 
@@ -121,7 +121,7 @@ class UserController extends Controller
 
             $user = User::create($userData);
 
-            if ($currentRole === UserRole::Staff->value) {
+            if ($currentRole === UserRole::StaffAdministrasi->value) {
                 try {
                     $userCreating = $request->user();
                     activity()
@@ -135,7 +135,7 @@ class UserController extends Controller
                             'user_email' => $user->email,
                             'user_role' => $roleValue,
                         ])
-                        ->log("Staff '{$userCreating->nama_lengkap}' created a new Karyawan '{$user->nama_lengkap}' with email '{$user->email}'");
+                        ->log("Staff '{$userCreating->nama_lengkap}' created a new Staff Produksi '{$user->nama_lengkap}' with email '{$user->email}'");
                 } catch (Exception $logError) {
                     \Log::warning("Failed to log activity: " . $logError->getMessage());
                 }
@@ -197,11 +197,11 @@ class UserController extends Controller
     private function getAllowedRoles(string $currentRole): array
     {
         if ($currentRole === UserRole::Admin->value) {
-            return [UserRole::Admin->value, UserRole::Staff->value, UserRole::Karyawan->value];
+            return [UserRole::Admin->value, UserRole::StaffAdministrasi->value, UserRole::StaffProduksi->value];
         }
 
-        if ($currentRole === UserRole::Staff->value) {
-            return [UserRole::Karyawan->value];
+        if ($currentRole === UserRole::StaffAdministrasi->value) {
+            return [UserRole::StaffProduksi->value];
         }
 
         return [];
@@ -250,7 +250,7 @@ class UserController extends Controller
                 return response()->json(['message' => 'Server Error'], 500);
             }
 
-            if ($request->user()->role === UserRole::Staff->value) {
+            if ($request->user()->role === UserRole::StaffAdministrasi->value) {
                 $userUpdating = $request->user();
                 activity()
                     ->causedBy($userUpdating)

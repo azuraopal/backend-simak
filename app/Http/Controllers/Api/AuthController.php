@@ -21,7 +21,7 @@ class AuthController extends Controller
             'nama_lengkap' => 'required|string|max:100',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
-            'role' => 'required|in:Admin,Karyawan'
+            'role' => 'required|in:Admin,StaffProduksi'
         ]);
 
         if ($validator->fails()) {

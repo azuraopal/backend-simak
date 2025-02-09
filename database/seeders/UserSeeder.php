@@ -21,10 +21,10 @@ class UserSeeder extends Seeder
         ]);
 
         User::create([ 
-            'nama_lengkap' => 'Karyawan',
+            'nama_lengkap' => 'Staff Produksi',
             'email' => 'muhammadnovalsupriyadi1@gmail.com',
             'password' => Hash::make('nopal123'),
-            'role' => 'Karyawan',
+            'role' => 'StaffProduksi',
         ]);
         User::create([ 
             'nama_lengkap' => 'Staff',

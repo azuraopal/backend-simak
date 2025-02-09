@@ -12,8 +12,8 @@ return new class extends Migration {
     {
         Schema::create('barang_harian', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('karyawan_id')
-                ->constrained('karyawan', 'id')
+            $table->foreignId('staff_produksi_id')
+                ->constrained('staff_produksi', 'id')
                 ->restrictOnDelete()
                 ->restrictOnUpdate();
             $table->foreignId('barang_id')
@@ -25,7 +25,7 @@ return new class extends Migration {
             $table->timestamps();
             $table->softDeletes();
             $table->index('tanggal');
-            $table->index(['karyawan_id', 'tanggal']);
+            $table->index(['staff_produksi_id', 'tanggal']);
             $table->index(['barang_id', 'tanggal']);
         });
     }

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('role')->default(UserRole::Karyawan->value);
+            $table->string('role')->default(UserRole::StaffProduksi->value);
             $table->string('foto_profile')->nullable(); 
             $table->rememberToken();
             $table->timestamps();

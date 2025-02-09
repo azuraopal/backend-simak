@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Laporan Upah Karyawan</title>
+    <title>Laporan Upah Staff Produksi</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -89,7 +89,7 @@
         @endphp
 
         <img src="{{ $base64 }}" alt="Logo" style="width: 100px; height: auto;">
-        <h1>Laporan Upah Karyawan</h1>
+        <h1>Laporan Upah Staff Produksi</h1>
         <div class="periode">
             @if(isset($request))
             Periode: {{ \Carbon\Carbon::parse($request->periode_mulai)->format('d/m/Y') }} - {{
@@ -104,7 +104,7 @@
     <table>
         <thead>
             <tr>
-                <th>Nama Karyawan</th>
+                <th>Nama Staff Produksi</th>
                 <th>Total Dikerjakan</th>
                 <th>Total Upah</th>
                 <th>Periode Mulai</th>
@@ -114,7 +114,7 @@
         <tbody>
             @forelse($upahList as $upah)
             <tr>
-                <td>{{ $upah->karyawan->user->nama_lengkap }}</td>
+                <td>{{ $upah->staff_produksi->user->nama_lengkap }}</td>
                 <td style="text-align: center;">{{ $upah->total_dikerjakan }}</td>
                 <td>Rp {{ number_format($upah->total_upah, 0, ',', '.') }}</td>
                 <td>{{ \Carbon\Carbon::parse($upah->periode_mulai)->format('d/m/Y') }}</td>

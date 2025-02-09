@@ -20,7 +20,7 @@ class StaffProduksiController extends Controller
             if ($staffProduksi->isEmpty()) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Data karyawan tidak ditemukan'
+                    'message' => 'Data Staff Produksi tidak ditemukan'
                 ], 404);
             }
 
@@ -64,14 +64,14 @@ class StaffProduksiController extends Controller
         if (!$user || $user->role !== UserRole::StaffProduksi) {
             return response()->json([
                 'status' => false,
-                'message' => 'ID karyawan tidak valid atau User bukan Karyawan'
+                'message' => 'ID Staff Produksi tidak valid atau User bukan Staff Produksi'
             ], 422);
         }
 
         if (StaffProduksi::where('users_id', $request->users_id)->exists()) {
             return response()->json([
                 'status' => false,
-                'message' => 'Informasi karyawan sudah tersedia'
+                'message' => 'Informasi Staff Produksi sudah tersedia'
             ], 422);
         }
 
@@ -110,7 +110,7 @@ class StaffProduksiController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'Informasi karyawan berhasil dibuat',
+                'message' => 'Informasi Staff Produksi berhasil dibuat',
                 'data' => $staffProduksi->load('user')
             ], 201);
 
@@ -118,7 +118,7 @@ class StaffProduksiController extends Controller
             DB::rollBack();
             return response()->json([
                 'status' => false,
-                'message' => 'Gagal membuat informasi karyawan',
+                'message' => 'Gagal membuat informasi Staff Produksi',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -132,7 +132,7 @@ class StaffProduksiController extends Controller
         if (!$staffProduksi) {
             return response()->json([
                 'status' => false,
-                'message' => 'Karyawan tidak ditemukan'
+                'message' => 'Staff Produksi tidak ditemukan'
             ], 404);
         }
 
@@ -156,7 +156,7 @@ class StaffProduksiController extends Controller
         if (!$staffProduksi) {
             return response()->json([
                 'status' => false,
-                'message' => 'Karyawan not found'
+                'message' => 'Staff Produksi not found'
             ], 404);
         }
 
@@ -279,14 +279,14 @@ class StaffProduksiController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'Karyawan information deleted successfully'
+                'message' => 'Staff Produksi information deleted successfully'
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to delete karyawan',
+                'message' => 'Failed to delete Staff Produksi',
                 'error' => $e->getMessage()
             ], 500);
         }

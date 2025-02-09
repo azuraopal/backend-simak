@@ -13,7 +13,7 @@ class Upah extends Model
     protected $table = 'upah';
 
     protected $fillable = [
-        'karyawan_id',
+        'staff_produksi_id',
         'minggu_ke',
         'total_dikerjakan',
         'total_upah',
@@ -26,14 +26,14 @@ class Upah extends Model
         'periode_selesai' => 'date'
     ];
 
-    public function karyawan()
+    public function StaffProduksi()
     {
-        return $this->belongsTo(Karyawan::class, 'karyawan_id');
+        return $this->belongsTo(StaffProduksi::class, 'staff_produksi_id');
     }
 
     public function detailPerhitungan()
     {
-        return $this->hasMany(BarangHarian::class, 'karyawan_id', 'karyawan_id')
+        return $this->hasMany(BarangHarian::class, 'staff_produksi_id', 'staff_produksi_id')
             ->join('barang as b', 'b.id', '=', 'barang_harian.barang_id')
             ->select(
                 'barang_harian.*',
@@ -46,7 +46,7 @@ class Upah extends Model
     {
         $result = DB::table('barang_harian as bh')
             ->join('barang as b', 'b.id', '=', 'bh.barang_id')
-            ->where('bh.karyawan_id', $this->karyawan_id)
+            ->where('bh.staff_produksi_id', $this->staff_produksi_id)
             ->whereBetween('bh.tanggal', [$this->periode_mulai, $this->periode_selesai])
             ->select(
                 DB::raw('COALESCE(SUM(bh.jumlah_dikerjakan), 0) as total_dikerjakan'),

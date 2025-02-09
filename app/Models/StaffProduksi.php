@@ -33,7 +33,7 @@ class StaffProduksi extends Model
     
     public function upah()
     {
-        return $this->hasMany(Upah::class, 'karyawan_id');
+        return $this->hasMany(Upah::class, 'staff_produksi_id');
     }
 
     public function getTanggalLahirAttribute($value)

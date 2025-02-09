@@ -80,7 +80,7 @@ class Barang extends Model
                     ->get();
 
                 foreach ($barangHarians as $bh) {
-                    $upah = Upah::where('karyawan_id', $bh->karyawan_id)
+                    $upah = Upah::where('staff_produksi_id', $bh->staff_produksi_id)
                         ->where('periode_mulai', '<=', $bh->tanggal)
                         ->where('periode_selesai', '>=', $bh->tanggal)
                         ->first();
@@ -88,7 +88,7 @@ class Barang extends Model
                     if ($upah) {
                         $totalBH = DB::table('barang_harian as bh')
                             ->join('barang as b', 'b.id', '=', 'bh.barang_id')
-                            ->where('bh.karyawan_id', $upah->karyawan_id)
+                            ->where('bh.staff_produksi_id', $upah->staff_produksi_id)
                             ->whereBetween('bh.tanggal', [$upah->periode_mulai, $upah->periode_selesai])
                             ->select(
                                 DB::raw('COALESCE(SUM(bh.jumlah_dikerjakan), 0) as total_dikerjakan'),

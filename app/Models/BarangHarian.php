@@ -9,7 +9,7 @@ class BarangHarian extends Model
     protected $table = 'barang_harian';
 
     protected $fillable = [
-        'karyawan_id',
+        'staff_produksi_id',
         'barang_id',
         'tanggal',
         'jumlah_dikerjakan'
@@ -20,14 +20,14 @@ class BarangHarian extends Model
         return $this->belongsTo(Barang::class, 'barang_id', 'id');
     }
 
-    public function karyawan()
+    public function StaffProduksi()
     {
-        return $this->belongsTo(Karyawan::class, 'karyawan_id', 'id');
+        return $this->belongsTo(StaffProduksi::class, 'staff_produksi_id', 'id');
     }
     public function user()
     {
-        return $this->belongsTo(User::class, 'karyawan_id', 'id')
-            ->join('karyawan', 'users.id', '=', 'karyawan.users_id');
+        return $this->belongsTo(User::class, 'staff_produksi_id', 'id')
+            ->join('staff_produksi', 'users.id', '=', 'staff_produksi.users_id');
     }
 
     protected static function booted()

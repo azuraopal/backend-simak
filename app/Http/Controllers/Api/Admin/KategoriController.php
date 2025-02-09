@@ -26,7 +26,7 @@ class KategoriController extends Controller
 
     public function index(Request $request)
     {
-        $this->validateRole($request, [UserRole::Admin, UserRole::Staff]);
+        $this->validateRole($request, [UserRole::Admin, UserRole::StaffAdministrasi]);
 
         return response()->json([
             'success' => true,
@@ -37,10 +37,10 @@ class KategoriController extends Controller
 
     public function store(Request $request)
     {
-        if (!$this->validateRole($request, [UserRole::Admin, UserRole::Staff])) {
+        if (!$this->validateRole($request, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
-                'message' => 'Unauthorized. Only Admin or Staff can perform this action.',
+                'message' => 'Unauthorized. Only Admin or StaffAdministrasi can perform this action.',
             ], 403);
         }
 
@@ -60,7 +60,7 @@ class KategoriController extends Controller
         try {
             $kategori = Kategori::create($validator->validated());
 
-            if ($request->user()->role === UserRole::Staff) {
+            if ($request->user()->role === UserRole::StaffAdministrasi) {
                 activity()
                     ->causedBy($request->user())
                     ->performedOn($kategori)
@@ -89,7 +89,7 @@ class KategoriController extends Controller
 
     public function show(Request $request, $id)
     {
-        $this->validateRole($request, [UserRole::Admin, UserRole::Staff]);
+        $this->validateRole($request, [UserRole::Admin, UserRole::StaffAdministrasi]);
 
         $kategori = Kategori::find($id);
 
@@ -110,7 +110,7 @@ class KategoriController extends Controller
 
     public function update(Request $request, $id)
     {
-        if (!$this->validateRole($request, [UserRole::Admin, UserRole::Staff])) {
+        if (!$this->validateRole($request, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized. Only Admin can perform this action.',
@@ -145,7 +145,7 @@ class KategoriController extends Controller
 
             $kategori->update($validator->validated());
 
-            if ($request->user()->role === UserRole::Staff) {
+            if ($request->user()->role === UserRole::StaffAdministrasi) {
                 if ($kategori instanceof Kategori) {
                     activity()
                         ->causedBy($request->user())
@@ -196,7 +196,7 @@ class KategoriController extends Controller
 
             $kategoriData = $kategori->toArray();
 
-            if ($request->user()->role === UserRole::Staff) {
+            if ($request->user()->role === UserRole::StaffAdministrasi) {
                 if ($kategori instanceof Kategori) {
                     activity()
                         ->causedBy($request->user())

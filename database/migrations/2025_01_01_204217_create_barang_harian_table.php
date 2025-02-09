@@ -14,12 +14,12 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('staff_produksi_id')
                 ->constrained('staff_produksi', 'id')
-                ->restrictOnDelete()
-                ->restrictOnUpdate();
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->foreignId('barang_id')
                 ->constrained('barang', 'id')
-                ->restrictOnDelete()
-                ->restrictOnUpdate();
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->date('tanggal');
             $table->integer('jumlah_dikerjakan');
             $table->timestamps();

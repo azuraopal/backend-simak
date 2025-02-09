@@ -15,10 +15,10 @@ class StaffMiddleware
     public function handle(Request $request, Closure $next)
     {
         $user = Auth::user();
-        if (!$user || $user->role->value !== UserRole::Staff->value) {
+        if (!$user || $user->role->value !== UserRole::StaffAdministrasi->value) {
             return response()->json([
                 'status' => false,
-                'message' => 'Unauthorized access, Staff access required.',
+                'message' => 'Unauthorized access, Staff Administrasi access required.',
             ], 403);
         }
 

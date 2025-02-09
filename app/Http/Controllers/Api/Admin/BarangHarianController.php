@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\UserRole;
 use App\Models\BarangHarian;
-use App\Models\Karyawan;
+use App\Models\StaffProduksi;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -25,17 +25,17 @@ class BarangHarianController extends Controller
     public function index()
     {
         try {
-            $query = BarangHarian::with(['barang', 'karyawan.user']);
+            $query = BarangHarian::with(['barang', 'staff_produksi.user']);
 
-            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
-                $karyawan = Karyawan::where('users_id', Auth::id())->first();
-                if (!$karyawan) {
+            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
+                $staffAdministrasi = StaffProduksi::where('users_id', Auth::id())->first();
+                if (!$staffAdministrasi) {
                     return response()->json([
                         'status' => false,
-                        'message' => 'Data karyawan tidak ditemukan'
+                        'message' => 'Data Staff Produksi tidak ditemukan'
                     ], 404);
                 }
-                $query->where('karyawan_id', $karyawan->id);
+                $query->where('staff_produksi_id', $staffAdministrasi->id);
             }
 
             $barangHarian = $query->orderBy('tanggal', 'desc')->get();
@@ -61,7 +61,7 @@ class BarangHarianController extends Controller
     public function store(Request $request)
     {
 
-        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized access'
@@ -71,7 +71,7 @@ class BarangHarianController extends Controller
         try {
 
             $validator = Validator::make($request->all(), [
-                'karyawan_id' => 'required|exists:karyawan,id',
+                'staff_produksi_id' => 'required|exists:staff_produksi,id',
                 'barang_id' => 'required|exists:barang,id',
                 'tanggal' => [
                     'required',
@@ -99,12 +99,12 @@ class BarangHarianController extends Controller
                 ], 422);
             }
 
-            $barangHarian = BarangHarian::with('karyawan.user')->create($request->all());
+            $barangHarian = BarangHarian::with('staff_produksi.user')->create($request->all());
 
             return response()->json([
                 'status' => true,
                 'message' => 'Data barang harian berhasil ditambahkan',
-                'data' => $barangHarian->load(['barang', 'karyawan.user'])
+                'data' => $barangHarian->load(['barang', 'staff_produksi.user'])
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -119,7 +119,7 @@ class BarangHarianController extends Controller
     public function show($id)
     {
         try {
-            $barangHarian = BarangHarian::with(['barang', 'karyawan.user'])->find($id);
+            $barangHarian = BarangHarian::with(['barang', 'staff_produksi.user'])->find($id);
 
             if (!$barangHarian) {
                 return response()->json([
@@ -128,9 +128,9 @@ class BarangHarianController extends Controller
                 ], 404);
             }
 
-            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::Staff])) {
-                $karyawan = Karyawan::where('users_id', Auth::id())->first();
-                if (!$karyawan || $barangHarian->karyawan_id !== $karyawan->id) {
+            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
+                $staff_produksi = StaffProduksi::where('users_id', Auth::id())->first();
+                if (!$staff_produksi || $barangHarian->staff_produksi_id !== $staff_produksi->id) {
                     return response()->json([
                         'status' => false,
                         'message' => 'Unauthorized access'
@@ -159,13 +159,13 @@ class BarangHarianController extends Controller
 
         try {
             $validator = Validator::make($request->all(), [
-                'karyawan_id' => [
+                'staff_produksi_id' => [
                     'required',
-                    'exists:karyawan,id',
+                    'exists:staff_produksi,id',
                     function ($attribute, $value, $fail) {
-                        $karyawan = Karyawan::find($value);
-                        if (!$karyawan || !$karyawan->user) {
-                            $fail('Data karyawan tidak lengkap atau tidak valid.');
+                        $staff_produksi = StaffProduksi::find($value);
+                        if (!$staff_produksi || !$staff_produksi->user) {
+                            $fail('Data staff_produksi tidak lengkap atau tidak valid.');
                         }
                     },
                 ],
@@ -208,7 +208,7 @@ class BarangHarianController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Data barang harian berhasil diupdate',
-                'data' => $barangHarian->load(['barang', 'karyawan.user'])
+                'data' => $barangHarian->load(['barang', 'staff_produksi.user'])
             ], 200);
         } catch (\Exception $e) {
             return $this->handleException($e);

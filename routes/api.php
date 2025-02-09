@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\BarangController;
 use App\Http\Controllers\Api\Admin\UpahController;
 use App\Http\Controllers\Api\Admin\UserController;
-use App\Http\Controllers\Api\Admin\KaryawanController;
+use App\Http\Controllers\Api\Admin\StaffProduksiController;
 use App\Http\Controllers\Api\Admin\KategoriController;
 use App\Http\Controllers\Api\Admin\BarangHarianController;
 use Illuminate\Http\Request;
@@ -34,7 +34,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         $query = \Spatie\Activitylog\Models\Activity::query();
 
         $query->whereHas('causer', function ($q) {
-            $q->where('role', UserRole::Staff);
+            $q->where('role', UserRole::StaffAdministrasi);
         });
 
         if ($request->has('action')) {
@@ -77,14 +77,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::delete('/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
-    // Karyawan Management
-    Route::prefix('karyawan')->group(function () {
-        Route::get('/', [KaryawanController::class, 'index'])->name('karyawan.index');
-        Route::post('/', [KaryawanController::class, 'store'])->name('karyawan.store');
-        Route::get('/{id}', [KaryawanController::class, 'show'])->name('karyawan.show');
-        Route::put('/{id}', [KaryawanController::class, 'update'])->name('karyawan.update');
-        Route::delete('/{id}', [KaryawanController::class, 'destroy'])->name('karyawan.destroy');
-        Route::get('/search', [KaryawanController::class, 'search'])->name('karyawan.search');
+    // Staff Produksi Management
+    Route::prefix('staff-produksi')->group(function () {
+        Route::get('/', [StaffProduksiController::class, 'index'])->name('staffProduksi.index');
+        Route::post('/', [StaffProduksiController::class, 'store'])->name('staffProduksi.store');
+        Route::get('/{id}', [StaffProduksiController::class, 'show'])->name('staffProduksi.show');
+        Route::put('/{id}', [StaffProduksiController::class, 'update'])->name('staffProduksi.update');
+        Route::delete('/{id}', [StaffProduksiController::class, 'destroy'])->name('staffProduksi.destroy');
+        Route::get('/search', [StaffProduksiController::class, 'search'])->name('staffProduksi.search');
     });
 
     // Upah Management
@@ -146,11 +146,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 });
 
 // Routes (Staff)
-Route::prefix('staff')->middleware(['auth:sanctum', 'staff', 'log.activity'])->group(function () {
+Route::prefix('staff-administrasi')->middleware(['auth:sanctum', 'staff', 'log.activity'])->group(function () {
 
     Route::prefix('users')->group(function () {
-        Route::post('/register/karyawan', [UserController::class, 'store'])
-            ->name('staff.users.registerKaryawan');
+        Route::post('/register/staff-produksi', [UserController::class, 'store'])
+            ->name('staff.users.registerStaffProduksi');
     });
 
     // Kategori Management
@@ -161,12 +161,12 @@ Route::prefix('staff')->middleware(['auth:sanctum', 'staff', 'log.activity'])->g
         Route::get('/{id}', [KategoriController::class, 'show'])->name('staff.kategori.show');
     });
 
-    // Karyawan Management
-    Route::prefix('karyawan')->group(function () {
-        Route::post('/', [KaryawanController::class, 'store'])->name('staff.karyawan.store');
-        Route::get('/', [KaryawanController::class, 'index'])->name('staff.karyawan.index');
-        Route::put('/{id}', [KaryawanController::class, 'update'])->name('staff.karyawan.update');
-        Route::get('/{id}', [KaryawanController::class, 'show'])->name('staff.karyawan.show');
+    // Staff Produksi Management
+    Route::prefix('staff-produksi')->group(function () {
+        Route::post('/', [StaffProduksiController::class, 'store'])->name('staff.StaffProduksi.store');
+        Route::get('/', [StaffProduksiController::class, 'index'])->name('staff.StaffProduksi.index');
+        Route::put('/{id}', [StaffProduksiController::class, 'update'])->name('staff.StaffProduksi.update');
+        Route::get('/{id}', [StaffProduksiController::class, 'show'])->name('staff.StaffProduksi.show');
     });
 
     // Upah Management

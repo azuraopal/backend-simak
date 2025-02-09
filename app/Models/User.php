@@ -44,9 +44,9 @@ class User extends Authenticatable
         'role' => UserRole::class
     ];
 
-    public function karyawan()
+    public function staffProduksi()
     {
-        return $this->hasOne(Karyawan::class, 'users_id', 'id');
+        return $this->hasOne(StaffProduksi::class, 'users_id', 'id');
     }
 
     public function isAdmin(): bool
@@ -54,8 +54,8 @@ class User extends Authenticatable
         return $this->role === UserRole::Admin;
     }
 
-    public function isKaryawan(): bool
+    public function isStaffProduksi(): bool
     {
-        return $this->role === UserRole::Karyawan;
+        return $this->role === UserRole::StaffProduksi;
     }
 }

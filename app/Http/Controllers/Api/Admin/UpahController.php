@@ -294,37 +294,27 @@ class UpahController extends Controller
         }
     }
 
-
     private function calculateWeekNumber($userCreatedAt, $targetDate)
     {
-        $startDate = Carbon::parse($userCreatedAt)->startOfDay();
+        $startDate = $userCreatedAt ? Carbon::parse($userCreatedAt)->startOfDay() : Carbon::now()->startOfDay();
         $targetDate = Carbon::parse($targetDate)->startOfDay();
 
         if ($targetDate->lt($startDate)) {
             return 0;
         }
 
+        $workDays = 0;
         $currentDate = $startDate->copy();
-        $weekCount = 1;
-        $workDaysInCurrentWeek = 0;
 
         while ($currentDate->lte($targetDate)) {
             if (!$currentDate->isWeekend()) {
-                $workDaysInCurrentWeek++;
-
-                if ($workDaysInCurrentWeek == 5) {
-                    if ($currentDate->lt($targetDate)) {
-                        $weekCount++;
-                    }
-                    $workDaysInCurrentWeek = 0;
-                }
+                $workDays++;
             }
             $currentDate->addDay();
         }
 
-        return $weekCount;
+        return ceil($workDays / 5);
     }
-
 
 
     private function calculatePeriodDates($startDate)

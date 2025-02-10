@@ -31,6 +31,21 @@ class StaffProduksi extends Model
         return $this->belongsTo(User::class, 'users_id', 'id');
     }
 
+    public static function createWithUserData($userId, array $data)
+    {
+        $user = User::findOrFail($userId);
+
+        return self::create([
+            'users_id' => $userId,
+            'nama' => $user->nama_lengkap,
+            'tanggal_lahir' => $data['tanggal_lahir'],
+            'pekerjaan' => $data['pekerjaan'],
+            'alamat' => $data['alamat'],
+            'telepon' => $user->nomor_hp,
+            'email' => $user->email, 
+        ]);
+    }
+
     public function upah()
     {
         return $this->hasMany(Upah::class, 'staff_produksi_id');

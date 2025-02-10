@@ -50,7 +50,6 @@ class StaffProduksiController extends Controller
             'tanggal_lahir' => 'required|date',
             'pekerjaan' => 'required|string|max:255',
             'alamat' => 'required|string',
-            'telepon' => 'required|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -75,6 +74,13 @@ class StaffProduksiController extends Controller
             ], 422);
         }
 
+        if (!$user->nomor_hp) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Nomor HP belum tersedia pada data pengguna'
+            ], 422);
+        }
+
         DB::beginTransaction();
         try {
             $selectedUser = User::findOrFail($request->users_id);
@@ -85,7 +91,7 @@ class StaffProduksiController extends Controller
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'pekerjaan' => $request->pekerjaan,
                 'alamat' => $request->alamat,
-                'telepon' => $request->telepon,
+                'telepon' => $user->nomor_hp,
                 'email' => $selectedUser->email,
             ]);
 
@@ -123,7 +129,6 @@ class StaffProduksiController extends Controller
             ], 500);
         }
     }
-
 
     public function show($id)
     {

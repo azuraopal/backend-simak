@@ -51,6 +51,10 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'nama_lengkap' => 'required|string|max:100',
             'email' => 'required|string|email|max:255|unique:users,email',
+            'nomor_hp' => [
+                'required',
+                'regex:/^(\+62|62|0)8[1-9][0-9]{6,9}$/',
+            ],
             'role' => [
                 'required',
                 new Enum(UserRole::class),
@@ -105,6 +109,7 @@ class UserController extends Controller
             $userData = [
                 'nama_lengkap' => $request->nama_lengkap,
                 'email' => $request->email,
+                'nomor_hp' => $request->nomor_hp,
                 'password' => Hash::make($password),
                 'role' => $roleValue,
                 'foto_profile' => $request->foto_profile ?? $defaultFotoProfile,
@@ -225,6 +230,11 @@ class UserController extends Controller
             $validator = Validator::make($request->all(), [
                 'nama_lengkap' => 'sometimes|required|string|max:100',
                 'email' => "sometimes|required|email|unique:users,email,{$user->id}",
+                'nomor_hp' => [
+                    'sometimes',
+                    'required',
+                    'regex:/^(\+62|62|0)8[1-9][0-9]{6,9}$/',
+                ],
                 'password' => 'nullable|string|min:8',
                 'role' => ['sometimes', new Enum(UserRole::class)],
             ]);

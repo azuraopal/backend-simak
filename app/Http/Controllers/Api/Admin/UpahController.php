@@ -300,22 +300,25 @@ class UpahController extends Controller
         $targetDate = Carbon::parse($targetDate)->startOfDay();
 
         if ($targetDate->lt($startDate)) {
-            return 0;
+            return 1;
         }
 
         $workDays = 0;
         $currentDate = $startDate->copy();
 
         while ($currentDate->lte($targetDate)) {
+            // Hanya hitung hari Senin-Jumat
             if (!$currentDate->isWeekend()) {
                 $workDays++;
             }
             $currentDate->addDay();
         }
 
-        return ceil($workDays / 5);
-    }
+        $weekNumber = ceil($workDays / 5);
 
+        // Pastikan minimal minggu ke-1
+        return max(1, $weekNumber);
+    }
 
     private function calculatePeriodDates($startDate)
     {

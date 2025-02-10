@@ -17,9 +17,9 @@ use Illuminate\Http\Request;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/users/forgot-password', [UserController::class, 'sendResetLinkEmail']);
 Route::post('/users/reset-password', [UserController::class, 'reset']);
-Route::post('auth/send-otp', [FirebaseAuthController::class, 'sendOTP']);
-Route::post('auth/verify-otp', [FirebaseAuthController::class, 'verifyOTP']);
-Route::post('auth/reset-password', [FirebaseAuthController::class, 'resetPassword']);
+Route::post('/users/auth/send-otp', [FirebaseAuthController::class, 'sendOTP']);
+Route::post('/users/auth/verify-otp', [FirebaseAuthController::class, 'verifyOTP']);
+Route::post('/users/auth/reset-password', [FirebaseAuthController::class, 'resetPassword']);
 
 // Public Routes
 Route::middleware('auth:sanctum')->group(function () {

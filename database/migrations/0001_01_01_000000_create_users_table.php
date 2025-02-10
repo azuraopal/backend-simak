@@ -14,10 +14,11 @@ return new class extends Migration
             $table->id();
             $table->string('nama_lengkap', 100);
             $table->string('email')->unique();
+            $table->string('nomor_hp', 15)->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('role')->default(UserRole::StaffProduksi->value);
-            $table->string('foto_profile')->nullable(); 
+            $table->string('foto_profile')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

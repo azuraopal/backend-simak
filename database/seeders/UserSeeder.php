@@ -15,6 +15,7 @@ class UserSeeder extends Seeder
     {
         User::create([ 
             'nama_lengkap' => 'Admin',
+            'nomor_hp' => '081234567890',
             'email' => 'muhammadnovals334@gmail.com',
             'password' => Hash::make('nopal123'),
             'role' => 'Admin',
@@ -22,11 +23,13 @@ class UserSeeder extends Seeder
 
         User::create([ 
             'nama_lengkap' => 'Staff Produksi',
+            'nomor_hp' => '081234567898',
             'email' => 'muhammadnovalsupriyadi1@gmail.com',
             'password' => Hash::make('nopal123'),
             'role' => 'StaffProduksi',
         ]);
         User::create([ 
+            'nomor_hp' => '081234567895',
             'nama_lengkap' => 'Staff Administrasi',
             'email' => 'simakpdjaya@gmail.com',
             'password' => Hash::make('nopal123'),

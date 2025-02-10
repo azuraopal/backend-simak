@@ -2,7 +2,7 @@
 use App\Enums\UserRole;
 use App\Http\Controllers\Api\Admin\LaporanBarangController;
 use App\Http\Controllers\Api\Admin\LaporanUpahController;
-use App\Http\Controllers\Api\OtpWablasController;
+use App\Http\Controllers\Api\FirebaseAuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\BarangController;
@@ -17,8 +17,8 @@ use Illuminate\Http\Request;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/users/forgot-password', [UserController::class, 'sendResetLinkEmail']);
 Route::post('/users/reset-password', [UserController::class, 'reset']);
-Route::post('/users/auth/send-otp', [OtpWablasController::class, 'sendOTP']);
-Route::post('/users/auth/verify-otp', [OtpWablasController::class, 'verifyOTP']);
+Route::post('/users/auth/send-otp', [FirebaseAuthController::class, 'sendOTP']);
+Route::post('/users/auth/verify-otp', [FirebaseAuthController::class, 'verifyOTP']);
 
 // Public Routes
 Route::middleware('auth:sanctum')->group(function () {

@@ -29,6 +29,14 @@ class ForgotPasswordController extends Controller
             ], 404);
         }
 
+        $lastRequest = DB::table('password_resets')->where('phone', $nomor_hp)->first();
+
+        if ($lastRequest && Carbon::parse($lastRequest->created_at)->diffInMinutes(now()) < 5) {
+            return response()->json([
+                'message' => 'Tunggu 5 menit sebelum meminta kode lagi'
+            ], 429);
+        }
+
         $code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
 
         DB::table('password_resets')->updateOrInsert(

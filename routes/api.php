@@ -15,8 +15,10 @@ use Illuminate\Http\Request;
 
 // Auth Routes
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/users/forgot-password', [UserController::class, 'sendResetLinkEmail']);
-Route::post('/users/reset-password', [UserController::class, 'reset']);
+
+// Forgot Password Routes
+Route::post('/users/forgot-password/email', [UserController::class, 'sendResetLinkEmail']);
+Route::post('/users/forgot-password/reset/email', [UserController::class, 'reset']);
 Route::post('/users/forgot-password/send-code', [ForgotPasswordController::class, 'sendResetCode']);
 Route::post('/users/forgot-password/reset', [ForgotPasswordController::class, 'resetPassword']);
 

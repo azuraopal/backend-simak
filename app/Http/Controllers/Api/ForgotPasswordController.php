@@ -13,13 +13,14 @@ class ForgotPasswordController extends Controller
     public function sendResetCode(Request $request)
     {
         $request->validate([
-            'nomor_hp' => 'required'
+            'nomor_hp' => 'required|exists:users,nomor_hp'
         ]);
 
+        $nomor_hp = $this->normalizePhoneNumber($request->nomor_hp);
         $code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
 
         \DB::table('password_resets')->updateOrInsert(
-            ['phone' => $request->nomor_hp],
+            ['phone' => $nomor_hp],
             [
                 'token' => Hash::make($code),
                 'created_at' => now()
@@ -27,8 +28,12 @@ class ForgotPasswordController extends Controller
         );
 
         $response = Http::post('http://localhost:3000/send-message', [
-            'phone' => $request->nomor_hp,
-            'message' => "Kode reset password Anda: $code\n\nBerlaku 15 menit."
+            'phone' => $nomor_hp,
+            'message' => "🔐 *Kode Verifikasi Reset Password*\n\n" .
+                "Kode rahasia Anda: *{$code}*\n" .
+                "Kode ini hanya berlaku selama *15 menit*.\n\n" .
+                "Jangan berikan kode ini kepada siapa pun demi keamanan akun Anda.\n\n" .
+                "Terima kasih,\nSIMAK"
         ]);
 
         if (!$response->successful()) {
@@ -45,13 +50,15 @@ class ForgotPasswordController extends Controller
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'nomor_hp' => 'required',
+            'nomor_hp' => 'required|exists:users,nomor_hp',
             'code' => 'required',
             'password' => 'required|confirmed|min:6'
         ]);
 
+        $nomor_hp = $this->normalizePhoneNumber($request->nomor_hp);
+
         $reset = \DB::table('password_resets')
-            ->where('phone', $request->nomor_hp)
+            ->where('phone', $nomor_hp)
             ->first();
 
         if (!$reset || !Hash::check($request->code, $reset->token)) {
@@ -66,15 +73,25 @@ class ForgotPasswordController extends Controller
             ], 400);
         }
 
-        User::where('nomor_hp', $request->nomor_hp)
+        User::where('nomor_hp', $nomor_hp)
             ->update(['password' => Hash::make($request->password)]);
 
         \DB::table('password_resets')
-            ->where('phone', $request->nomor_hp)
+            ->where('phone', $nomor_hp)
             ->delete();
 
         return response()->json([
             'message' => 'Password berhasil direset'
         ]);
+    }
+    private function normalizePhoneNumber($number)
+    {
+        if (substr($number, 0, 1) === '0') {
+            return "+62" . substr($number, 1);
+        }
+        if (substr($number, 0, 2) === '62') {
+            return "+$number";
+        }
+        return $number;
     }
 }

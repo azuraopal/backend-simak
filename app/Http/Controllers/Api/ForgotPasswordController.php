@@ -3,23 +3,35 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class ForgotPasswordController extends Controller
 {
     public function sendResetCode(Request $request)
     {
-        $request->validate([
-            'nomor_hp' => 'required|exists:users,nomor_hp'
-        ]);
-
         $nomor_hp = $this->normalizePhoneNumber($request->nomor_hp);
+        $nomor_hp_alt = str_replace('+62', '0', $nomor_hp);
+
+        $user = User::where('nomor_hp', $nomor_hp)
+            ->orWhere('nomor_hp', $nomor_hp_alt)
+            ->orWhere('nomor_hp', 'LIKE', '%' . substr($nomor_hp, 3))
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Nomor HP tidak ditemukan'
+            ], 404);
+        }
+
         $code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        \DB::table('password_resets')->updateOrInsert(
+        DB::table('password_resets')->updateOrInsert(
             ['phone' => $nomor_hp],
             [
                 'token' => Hash::make($code),
@@ -49,49 +61,81 @@ class ForgotPasswordController extends Controller
 
     public function resetPassword(Request $request)
     {
-        $request->validate([
-            'nomor_hp' => 'required|exists:users,nomor_hp',
-            'code' => 'required',
-            'password' => 'required|confirmed|min:6'
-        ]);
+        try {
+            $request->headers->set('Accept', 'application/json');
 
-        $nomor_hp = $this->normalizePhoneNumber($request->nomor_hp);
+            $validator = Validator::make($request->all(), [
+                'nomor_hp' => 'required',
+                'code' => 'required',
+                'password' => 'required|confirmed|min:6'
+            ]);
 
-        $reset = \DB::table('password_resets')
-            ->where('phone', $nomor_hp)
-            ->first();
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
-        if (!$reset || !Hash::check($request->code, $reset->token)) {
+            $nomor_hp = $this->normalizePhoneNumber($request->nomor_hp);
+            $nomor_hp_alt = str_replace('+62', '0', $nomor_hp);
+
+            $user = User::where('nomor_hp', $nomor_hp)
+                ->orWhere('nomor_hp', $nomor_hp_alt)
+                ->first();
+
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User tidak ditemukan'
+                ], 404);
+            }
+
+            $reset = DB::table('password_resets')
+                ->where('phone', $nomor_hp)
+                ->orWhere('phone', $nomor_hp_alt)
+                ->first();
+
+            if (!$reset || !Hash::check($request->code, $reset->token)) {
+                return response()->json([
+                    'message' => 'Kode tidak valid'
+                ], 400);
+            }
+
+            if (Carbon::parse($reset->created_at)->diffInMinutes(now()) > 15) {
+                return response()->json([
+                    'message' => 'Kode sudah kadaluarsa'
+                ], 400);
+            }
+
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            DB::table('password_resets')->where('phone', $nomor_hp)->delete();
+
             return response()->json([
-                'message' => 'Kode tidak valid'
-            ], 400);
-        }
+                'message' => 'Password berhasil direset'
+            ], 200);
 
-        if (now()->diffInMinutes($reset->created_at) > 15) {
+        } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Kode sudah kadaluarsa'
-            ], 400);
+                'message' => 'Terjadi kesalahan',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        User::where('nomor_hp', $nomor_hp)
-            ->update(['password' => Hash::make($request->password)]);
-
-        \DB::table('password_resets')
-            ->where('phone', $nomor_hp)
-            ->delete();
-
-        return response()->json([
-            'message' => 'Password berhasil direset'
-        ]);
     }
-    private function normalizePhoneNumber($number)
+
+    private function normalizePhoneNumber($phone)
     {
-        if (substr($number, 0, 1) === '0') {
-            return "+62" . substr($number, 1);
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+
+        if (substr($phone, 0, 2) == '62') {
+            $formatted = "+{$phone}";
+        } elseif (substr($phone, 0, 1) == '0') {
+            $formatted = "+62" . substr($phone, 1);
+        } else {
+            $formatted = "+62{$phone}";
         }
-        if (substr($number, 0, 2) === '62') {
-            return "+$number";
-        }
-        return $number;
+
+        return $formatted;
     }
 }

@@ -129,6 +129,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::delete('/{id}', [BarangHarianController::class, 'destroy'])->name('barang-harian.destroy');
     });
 
+    // Stock Management
     Route::prefix('stock')->group(function () {
         Route::post('/{id}', [BarangController::class, 'addStock'])->name('admin.stock.add');
     });

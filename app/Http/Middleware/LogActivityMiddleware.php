@@ -12,7 +12,7 @@ class LogActivityMiddleware
     {
         $response = $next($request);
 
-        if (auth()->check() && auth()->user()->role === 'Staff') {
+        if (auth()->check() && auth()->user()->role === 'StaffAdministrasi') {
             activity()
                 ->causedBy(auth()->user()) 
                 ->withProperties([

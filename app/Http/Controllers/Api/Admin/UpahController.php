@@ -307,7 +307,6 @@ class UpahController extends Controller
         $currentDate = $startDate->copy();
 
         while ($currentDate->lte($targetDate)) {
-            // Hanya hitung hari Senin-Jumat
             if (!$currentDate->isWeekend()) {
                 $workDays++;
             }
@@ -316,7 +315,6 @@ class UpahController extends Controller
 
         $weekNumber = ceil($workDays / 5);
 
-        // Pastikan minimal minggu ke-1
         return max(1, $weekNumber);
     }
 

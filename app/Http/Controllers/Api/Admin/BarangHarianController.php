@@ -60,7 +60,6 @@ class BarangHarianController extends Controller
 
     public function store(Request $request)
     {
-
         if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
@@ -69,7 +68,6 @@ class BarangHarianController extends Controller
         }
 
         try {
-
             $validator = Validator::make($request->all(), [
                 'staff_produksi_id' => 'required|exists:staff_produksi,id',
                 'barang_id' => 'required|exists:barang,id',
@@ -79,7 +77,7 @@ class BarangHarianController extends Controller
                     'date_format:Y-m-d',
                     function ($attribute, $value, $fail) {
                         $date = Carbon::parse($value);
-                        if ($date->isWeekend()) {
+                        if ($date->isWeekend() && config('app.env') === 'production') {
                             $fail('Tanggal tidak boleh di akhir pekan.');
                         }
                         if ($date->gt(Carbon::now())) {
@@ -89,7 +87,6 @@ class BarangHarianController extends Controller
                 ],
                 'jumlah_dikerjakan' => 'required|integer|min:1'
             ]);
-
 
             if ($validator->fails()) {
                 return response()->json([
@@ -114,7 +111,6 @@ class BarangHarianController extends Controller
             ], 500);
         }
     }
-
 
     public function show($id)
     {
@@ -176,7 +172,7 @@ class BarangHarianController extends Controller
                     'date_format:Y-m-d',
                     function ($attribute, $value, $fail) {
                         $date = Carbon::parse($value);
-                        if ($date->isWeekend()) {
+                        if ($date->isWeekend() && config('app.env') === 'production') {
                             $fail('Tanggal tidak boleh di akhir pekan.');
                         }
                         if ($date->gt(Carbon::now())) {

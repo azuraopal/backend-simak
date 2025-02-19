@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\UserRole;
+use App\Models\Barang;
 use App\Models\BarangHarian;
 use App\Models\StaffProduksi;
+use App\Models\Stock;
 use Carbon\Carbon;
+use DB;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -57,7 +60,6 @@ class BarangHarianController extends Controller
         }
     }
 
-
     public function store(Request $request)
     {
         if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
@@ -96,13 +98,42 @@ class BarangHarianController extends Controller
                 ], 422);
             }
 
-            $barangHarian = BarangHarian::with('staff_produksi.user')->create($request->all());
+            return DB::transaction(function () use ($request) {
+                $barang = Barang::with('stock')->where('id', $request->barang_id)->first();
 
-            return response()->json([
-                'status' => true,
-                'message' => 'Data barang harian berhasil ditambahkan',
-                'data' => $barangHarian->load(['barang', 'staff_produksi.user'])
-            ], 201);
+                if (!$barang || !$barang->stock) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Barang tidak ditemukan atau stok belum diatur'
+                    ], 404);
+                }
+
+                $stokTersedia = $barang->stock->stock;
+
+                if ($stokTersedia <= 0) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Stok barang habis, tidak bisa dikerjakan lagi.'
+                    ], 400);
+                }
+
+                if ($stokTersedia < $request->jumlah_dikerjakan) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Stok barang tidak mencukupi. Stok tersedia: $stokTersedia"
+                    ], 400);
+                }
+
+                $barang->stock()->decrement('stock', $request->jumlah_dikerjakan);
+
+                $barangHarian = BarangHarian::create($request->all());
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Data barang harian berhasil ditambahkan',
+                    'data' => $barangHarian->load(['barang', 'staff_produksi.user'])
+                ], 201);
+            });
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -111,6 +142,7 @@ class BarangHarianController extends Controller
             ], 500);
         }
     }
+
 
     public function show($id)
     {

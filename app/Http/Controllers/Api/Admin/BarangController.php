@@ -197,7 +197,7 @@ class BarangController extends Controller
 
             $barang->stock()->updateOrCreate(
                 ['id' => $barang->stock_id],
-                ['stock' => $stokAwal + $request->stok]
+                ['stock' => max(0, $stokAwal + $request->stok)]
             );
 
             $user = $request->user();
@@ -214,9 +214,9 @@ class BarangController extends Controller
                         'added_by' => $user->id,
                         'added_by_name' => $user->nama_lengkap ?: $user->email,
                     ])
-                    ->log("Stok barang '{$barang->nama}' berhasil ditambahkan sebanyak {$request->stok} oleh " . ($user->nama_lengkap ?: $user->email) . ".");
-
+                    ->log("Stok barang '{$barang->nama}' berhasil ditambahkan oleh " . ($user->nama_lengkap ?: $user->email) . ".");
             }
+
 
             return response()->json([
                 'status' => true,
@@ -226,6 +226,93 @@ class BarangController extends Controller
                     'nama' => $barang->nama,
                     'stok' => $stokAwal + $request->stok,
                     'added_by' => $user->name ?? $user->email,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Server Error',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function reduceStock(Request $request, $id)
+    {
+        if (!$this->isAdminOrStaff($request)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized. Only Admin or Staff can perform this action.',
+            ], 403);
+        }
+
+        $barang = Barang::find($id);
+
+        if (!$barang) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Barang tidak ditemukan',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'stok' => 'required|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation Error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $stokAwal = $barang->stock ? $barang->stock->stock : 0;
+
+            if ($stokAwal <= 0) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Stok habis',
+                ], 400);
+            }
+
+            if ($stokAwal - $request->stok < 0) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak bisa mengurangi stok di bawah 0',
+                ], 400);
+            }
+
+            $barang->stock()->updateOrCreate(
+                ['id' => $barang->stock_id],
+                ['stock' => max(0, $stokAwal - $request->stok)]
+            );
+
+            $user = $request->user();
+
+            if ($barang instanceof \Illuminate\Database\Eloquent\Model) {
+                activity()
+                    ->causedBy($user)
+                    ->performedOn($barang)
+                    ->withProperties([
+                        'action' => 'reduceStock',
+                        'reduced_stock' => $request->stok,
+                        'previous_stock' => $stokAwal,
+                        'new_stock' => max(0, $stokAwal - $request->stok),
+                        'reduced_by' => $user->id,
+                        'reduced_by_name' => $user->nama_lengkap ?: $user->email,
+                    ])
+                    ->log("Stok barang '{$barang->nama}' berhasil dikurangi sebanyak {$request->stok} oleh " . ($user->nama_lengkap ?: $user->email) . ".");
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Stok barang berhasil dikurangi',
+                'data' => [
+                    'id' => $barang->id,
+                    'nama' => $barang->nama,
+                    'stok' => max(0, $stokAwal - $request->stok),
+                    'reduced_by' => $user->name ?? $user->email,
                 ],
             ], 200);
         } catch (\Exception $e) {

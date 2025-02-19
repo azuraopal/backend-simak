@@ -21,7 +21,7 @@ class UpahController extends Controller
     public function index()
     {
         try {
-            $upahQuery = Upah::with(['staff_produksi.user:id,nama_lengkap,email,created_at']);
+            $upahQuery = Upah::with(['staffProduksi.user:id,nama_lengkap,email,created_at']);
 
             if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
                 $staffProduksi = StaffProduksi::where('users_id', Auth::id())->first();

@@ -62,7 +62,7 @@ class UpahController extends Controller
 
                 return [
                     'id' => $upah->id,
-                    'staff_produksi' => $upah->staff_produksi,
+                    'staff_produksi' => $upah->staffProduksi,
                     'minggu_ke' => $upah->minggu_ke,
                     'total_dikerjakan' => $upah->total_dikerjakan,
                     'total_upah' => $upah->total_upah,

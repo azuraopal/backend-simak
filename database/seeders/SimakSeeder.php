@@ -17,7 +17,6 @@ class SimakSeeder extends Seeder
 {
     public function run()
     {
-        // Admin
         User::create([
             'nama_lengkap' => 'Administrator',
             'email' => 'admin@example.com',
@@ -27,7 +26,6 @@ class SimakSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        // Staff Administrasi
         User::create([
             'nama_lengkap' => 'Staff Administrasi',
             'email' => 'administrasi@example.com',
@@ -37,7 +35,6 @@ class SimakSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        // Staff Produksi
         $staffUsers = [];
         for ($i = 1; $i <= 3; $i++) {
             $user = User::create([
@@ -49,7 +46,6 @@ class SimakSeeder extends Seeder
                 'email_verified_at' => now(),
             ]);
 
-            // Gunakan metode createWithUserData
             $staffProduksi = StaffProduksi::createWithUserData($user->id, [
                 'tanggal_lahir' => Carbon::now()->subYears(25)->format('d-m-Y'),
                 'pekerjaan' => 'Lem Bawah',
@@ -62,7 +58,6 @@ class SimakSeeder extends Seeder
             ];
         }
 
-        // Kategori
         $kategoris = [
             ['nama' => 'Pakaian', 'deskripsi' => 'Berbagai jenis pakaian'],
             ['nama' => 'Aksesoris', 'deskripsi' => 'Berbagai jenis aksesoris'],
@@ -73,7 +68,6 @@ class SimakSeeder extends Seeder
             Kategori::create($kategori);
         }
 
-        // Barang
         $barangs = [
             [
                 'nama' => 'Kemeja Lengan Panjang',
@@ -101,13 +95,11 @@ class SimakSeeder extends Seeder
             Barang::create($barang);
         }
 
-        // Upah & Barang Harian
         $startDate = Carbon::now()->subDays(30);
 
         foreach ($staffUsers as $staffUser) {
             $staffId = $staffUser['staff']->id;
 
-            // Upah awal
             $upah = Upah::create([
                 'staff_produksi_id' => $staffId,
                 'minggu_ke' => 1,
@@ -128,7 +120,6 @@ class SimakSeeder extends Seeder
                 ]);
             }
 
-            // Update total upah
             $upah->recalculateTotal();
         }
     }

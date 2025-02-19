@@ -17,6 +17,7 @@ class SimakSeeder extends Seeder
 {
     public function run()
     {
+        // Admin
         User::create([
             'nama_lengkap' => 'Administrator',
             'email' => 'admin@example.com',
@@ -26,6 +27,7 @@ class SimakSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
+        // Staff Administrasi
         User::create([
             'nama_lengkap' => 'Staff Administrasi',
             'email' => 'administrasi@example.com',
@@ -35,6 +37,7 @@ class SimakSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
+        // Staff Produksi
         $staffUsers = [];
         for ($i = 1; $i <= 3; $i++) {
             $user = User::create([
@@ -46,8 +49,11 @@ class SimakSeeder extends Seeder
                 'email_verified_at' => now(),
             ]);
 
-            $staffProduksi = StaffProduksi::create([
-                'users_id' => $user->id,
+            // Gunakan metode createWithUserData
+            $staffProduksi = StaffProduksi::createWithUserData($user->id, [
+                'tanggal_lahir' => Carbon::now()->subYears(25)->format('d-m-Y'),
+                'pekerjaan' => 'Lem Bawah',
+                'alamat' => 'Jalan Pintu Ledeng',
             ]);
 
             $staffUsers[] = [
@@ -56,6 +62,7 @@ class SimakSeeder extends Seeder
             ];
         }
 
+        // Kategori
         $kategoris = [
             ['nama' => 'Pakaian', 'deskripsi' => 'Berbagai jenis pakaian'],
             ['nama' => 'Aksesoris', 'deskripsi' => 'Berbagai jenis aksesoris'],
@@ -66,6 +73,7 @@ class SimakSeeder extends Seeder
             Kategori::create($kategori);
         }
 
+        // Barang
         $barangs = [
             [
                 'nama' => 'Kemeja Lengan Panjang',
@@ -89,16 +97,19 @@ class SimakSeeder extends Seeder
 
         foreach ($barangs as $barang) {
             $stock = Stock::create(['stock' => rand(50, 100)]);
-
             $barang['stock_id'] = $stock->id;
             Barang::create($barang);
         }
 
+        // Upah & Barang Harian
         $startDate = Carbon::now()->subDays(30);
 
         foreach ($staffUsers as $staffUser) {
+            $staffId = $staffUser['staff']->id;
+
+            // Upah awal
             $upah = Upah::create([
-                'staff_produksi_id' => $staffUser['staff']->id,
+                'staff_produksi_id' => $staffId,
                 'minggu_ke' => 1,
                 'total_dikerjakan' => 0,
                 'total_upah' => 0,
@@ -110,13 +121,14 @@ class SimakSeeder extends Seeder
                 $date = $startDate->copy()->addDays($i);
 
                 BarangHarian::create([
-                    'staff_produksi_id' => $staffUser['staff']->id,
+                    'staff_produksi_id' => $staffId,
                     'barang_id' => rand(1, 3),
                     'tanggal' => $date,
                     'jumlah_dikerjakan' => rand(5, 20)
                 ]);
             }
 
+            // Update total upah
             $upah->recalculateTotal();
         }
     }

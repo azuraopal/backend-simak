@@ -16,4 +16,19 @@ class Stock extends Model
     {
         return $this->hasOne(Barang::class, 'stock_id', 'id');
     }
+
+    public function reduceStock($amount)
+    {
+        if ($this->stock <= 0) {
+            throw new \Exception('Stock habis');
+        }
+
+        if ($this->stock - $amount < 0) {
+            throw new \Exception('Tidak bisa mengurangi stok di bawah 0');
+        }
+
+        $this->stock -= $amount;
+        $this->save();
+    }
+
 }

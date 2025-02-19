@@ -26,7 +26,7 @@ class Upah extends Model
         'periode_selesai' => 'date'
     ];
 
-    public function staff_produksi()
+    public function staffProduksi()
     {
         return $this->belongsTo(StaffProduksi::class, 'staff_produksi_id');
     }

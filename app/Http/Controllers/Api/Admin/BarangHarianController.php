@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Log;
 
 class BarangHarianController extends Controller
 {
@@ -139,13 +138,6 @@ class BarangHarianController extends Controller
                     'jumlah_dikerjakan' => $request->jumlah_dikerjakan
                 ]);
 
-                Log::info('Stok barang diupdate', [
-                    'barang_id' => $barang->id,
-                    'stok_awal' => $stokTersedia,
-                    'jumlah_dikurangi' => $request->jumlah_dikerjakan,
-                    'stok_akhir' => $newStock
-                ]);
-
                 return response()->json([
                     'status' => true,
                     'message' => 'Data barang harian berhasil ditambahkan',
@@ -153,11 +145,6 @@ class BarangHarianController extends Controller
                 ], 201);
             });
         } catch (\Exception $e) {
-            Log::error('Error saat menambah barang harian', [
-                'error' => $e->getMessage(),
-                'request' => $request->all()
-            ]);
-
             return response()->json([
                 'status' => false,
                 'message' => 'Terjadi kesalahan sistem',
@@ -165,7 +152,6 @@ class BarangHarianController extends Controller
             ], 500);
         }
     }
-
 
     public function show($id)
     {

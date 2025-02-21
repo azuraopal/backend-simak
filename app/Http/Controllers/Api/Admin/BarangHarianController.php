@@ -138,6 +138,26 @@ class BarangHarianController extends Controller
                     'jumlah_dikerjakan' => $request->jumlah_dikerjakan
                 ]);
 
+                if ($request->user()->role === UserRole::StaffAdministrasi) {
+                    $staffProduksi = StaffProduksi::with('user')->find($request->staff_produksi_id);
+                    activity()
+                        ->causedBy($request->user())
+                        ->performedOn($barangHarian)
+                        ->withProperties([
+                            'action' => 'store',
+                            'added_by_name' => $request->user()->nama_lengkap,
+                            'barang_harian_data' => [
+                                'staff_produksi' => $staffProduksi->nama,
+                                'barang' => $barang->nama,
+                                'tanggal' => $request->tanggal,
+                                'jumlah_dikerjakan' => $request->jumlah_dikerjakan,
+                                'stok_sebelumnya' => $stokTersedia,
+                                'stok_sesudah' => $newStock
+                            ]
+                        ])
+                        ->log("Staff '{$request->user()->nama_lengkap}' menambahkan data Barang Harian untuk staff '{$staffProduksi->nama}'");
+                }
+
                 return response()->json([
                     'status' => true,
                     'message' => 'Data barang harian berhasil ditambahkan',
@@ -150,38 +170,6 @@ class BarangHarianController extends Controller
                 'message' => 'Terjadi kesalahan sistem',
                 'error' => $e->getMessage()
             ], 500);
-        }
-    }
-
-    public function show($id)
-    {
-        try {
-            $barangHarian = BarangHarian::with(['barang', 'staff_produksi.user'])->find($id);
-
-            if (!$barangHarian) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Data barang harian tidak ditemukan'
-                ], 404);
-            }
-
-            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
-                $staff_produksi = StaffProduksi::where('users_id', Auth::id())->first();
-                if (!$staff_produksi || $barangHarian->staff_produksi_id !== $staff_produksi->id) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Unauthorized access'
-                    ], 403);
-                }
-            }
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Data barang harian berhasil diambil',
-                'data' => $barangHarian
-            ], 200);
-        } catch (\Exception $e) {
-            return $this->handleException($e);
         }
     }
 
@@ -232,15 +220,47 @@ class BarangHarianController extends Controller
                 ], 422);
             }
 
-            $barangHarian = BarangHarian::find($id);
-            if (!$barangHarian) {
+            DB::beginTransaction();
+
+            $barangHarian = BarangHarian::with(['barang', 'staff_produksi'])->find($id);
+            if (!$barangHarian instanceof BarangHarian) {
+                DB::rollBack();
                 return response()->json([
                     'status' => false,
                     'message' => 'Data barang harian tidak ditemukan'
                 ], 404);
             }
 
-            $barangHarian->update($request->all());
+            $oldData = [
+                'staff_produksi_id' => $barangHarian->staff_produksi_id,
+                'barang_id' => $barangHarian->barang_id,
+                'tanggal' => $barangHarian->tanggal,
+                'jumlah_dikerjakan' => $barangHarian->jumlah_dikerjakan
+            ];
+
+            $barangHarian->update($request->only(['staff_produksi_id', 'barang_id', 'tanggal', 'jumlah_dikerjakan']));
+
+            if ($request->user()->role === UserRole::StaffAdministrasi) {
+                $staffProduksi = StaffProduksi::with('user')->find($request->staff_produksi_id);
+
+                if ($staffProduksi instanceof StaffProduksi) {
+                    activity()
+                        ->causedBy($request->user())
+                        ->performedOn($barangHarian)
+                        ->withProperties([
+                            'action' => 'update',
+                            'updated_by_name' => $request->user()->nama_lengkap,
+                            'updated_by_role' => $request->user()->role,
+                            'old_data' => $oldData,
+                            'new_data' => $request->all(),
+                            'staff_produksi' => $staffProduksi->nama,
+                            'barang' => $barangHarian->barang->nama
+                        ])
+                        ->log("Staff '{$request->user()->nama_lengkap}' memperbarui data Barang Harian untuk staff '{$staffProduksi->nama}'");
+                }
+            }
+
+            DB::commit();
 
             return response()->json([
                 'status' => true,
@@ -248,11 +268,45 @@ class BarangHarianController extends Controller
                 'data' => $barangHarian->load(['barang', 'staff_produksi.user'])
             ], 200);
         } catch (\Exception $e) {
+            DB::rollBack();
             return $this->handleException($e);
         }
     }
 
-    public function destroy($id)
+
+    public function show($id)
+    {
+        try {
+            $barangHarian = BarangHarian::with(['barang', 'staff_produksi.user'])->find($id);
+
+            if (!$barangHarian) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data barang harian tidak ditemukan'
+                ], 404);
+            }
+
+            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
+                $staff_produksi = StaffProduksi::where('users_id', Auth::id())->first();
+                if (!$staff_produksi || $barangHarian->staff_produksi_id !== $staff_produksi->id) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Unauthorized access'
+                    ], 403);
+                }
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Data barang harian berhasil diambil',
+                'data' => $barangHarian
+            ], 200);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    public function destroy(Request $request, $id)
     {
         if (Auth::user()->role !== UserRole::Admin) {
             return response()->json([
@@ -262,7 +316,10 @@ class BarangHarianController extends Controller
         }
 
         try {
-            $barangHarian = BarangHarian::find($id);
+            DB::beginTransaction();
+
+            $barangHarian = BarangHarian::with(['barang', 'staff_produksi'])->find($id);
+
             if (!$barangHarian) {
                 return response()->json([
                     'status' => false,
@@ -270,14 +327,38 @@ class BarangHarianController extends Controller
                 ], 404);
             }
 
+            if ($request->user()->role === UserRole::StaffAdministrasi) {
+                if ($barangHarian instanceof BarangHarian) {
+                    activity()
+                        ->causedBy($request->user())
+                        ->performedOn($barangHarian)
+                        ->withProperties([
+                            'action' => 'delete',
+                            'deleted_by_name' => $request->user()->nama_lengkap,
+                            'deleted_by_role' => $request->user()->role,
+                            'barang_harian_data' => [
+                                'staff_produksi' => optional($barangHarian->staff_produksi)->nama ?? 'Unknown',
+                                'barang' => optional($barangHarian->barang)->nama ?? 'Unknown',
+                                'tanggal' => $barangHarian->tanggal,
+                                'jumlah_dikerjakan' => $barangHarian->jumlah_dikerjakan
+                            ]
+                        ])
+                        ->log("Staff '{$request->user()->nama_lengkap}' menghapus data Barang Harian untuk staff '{$barangHarian->staff_produksi->nama}'");
+                }
+            }
+
             $barangHarian->delete();
+
+            DB::commit();
 
             return response()->json([
                 'status' => true,
                 'message' => 'Data barang harian berhasil dihapus'
             ], 200);
         } catch (\Exception $e) {
+            DB::rollBack();
             return $this->handleException($e);
         }
     }
+
 }

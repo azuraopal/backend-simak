@@ -109,7 +109,7 @@ class StaffProduksiController extends Controller
                             'tanggal_lahir' => $staffProduksi->tanggal_lahir,
                         ]
                     ])
-                    ->log("Staff '{$request->user()->nama_lengkap}' menambahkan data Staff Administrasi baru '{$staffProduksi->nama}'");
+                    ->log("Staff '{$request->user()->nama_lengkap}' menambahkan data Staff Produksi baru '{$staffProduksi->nama}'");
             }
 
             DB::commit();

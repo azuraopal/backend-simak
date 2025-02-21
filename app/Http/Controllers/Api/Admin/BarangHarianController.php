@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Log;
 
 class BarangHarianController extends Controller
 {
@@ -99,16 +100,20 @@ class BarangHarianController extends Controller
             }
 
             return DB::transaction(function () use ($request) {
-                $barang = Barang::with('stock')->where('id', $request->barang_id)->first();
+                $barang = Barang::with([
+                    'stock' => function ($query) {
+                        $query->lockForUpdate();
+                    }
+                ])->findOrFail($request->barang_id);
 
-                if (!$barang || !$barang->stock) {
+                if (!$barang->stock) {
                     return response()->json([
                         'status' => false,
                         'message' => 'Barang tidak ditemukan atau stok belum diatur'
                     ], 404);
                 }
 
-                $stokTersedia = $barang->stock->stock;
+                $stokTersedia = $barang->stock->fresh()->stock;
 
                 if ($stokTersedia <= 0) {
                     return response()->json([
@@ -124,9 +129,22 @@ class BarangHarianController extends Controller
                     ], 400);
                 }
 
-                $barang->stock()->decrement('stock', $request->jumlah_dikerjakan);
+                $newStock = $stokTersedia - $request->jumlah_dikerjakan;
+                $barang->stock()->update(['stock' => $newStock]);
 
-                $barangHarian = BarangHarian::create($request->all());
+                $barangHarian = BarangHarian::create([
+                    'staff_produksi_id' => $request->staff_produksi_id,
+                    'barang_id' => $request->barang_id,
+                    'tanggal' => $request->tanggal,
+                    'jumlah_dikerjakan' => $request->jumlah_dikerjakan
+                ]);
+
+                Log::info('Stok barang diupdate', [
+                    'barang_id' => $barang->id,
+                    'stok_awal' => $stokTersedia,
+                    'jumlah_dikurangi' => $request->jumlah_dikerjakan,
+                    'stok_akhir' => $newStock
+                ]);
 
                 return response()->json([
                     'status' => true,
@@ -135,6 +153,11 @@ class BarangHarianController extends Controller
                 ], 201);
             });
         } catch (\Exception $e) {
+            Log::error('Error saat menambah barang harian', [
+                'error' => $e->getMessage(),
+                'request' => $request->all()
+            ]);
+
             return response()->json([
                 'status' => false,
                 'message' => 'Terjadi kesalahan sistem',

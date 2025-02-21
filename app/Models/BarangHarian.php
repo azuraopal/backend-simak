@@ -29,15 +29,4 @@ class BarangHarian extends Model
         return $this->belongsTo(User::class, 'staff_produksi_id', 'id')
             ->join('staff_produksi', 'users.id', '=', 'staff_produksi.users_id');
     }
-
-    protected static function booted()
-    {
-        static::creating(function ($barangHarian) {
-            $barang = $barangHarian->barang;
-            if ($barang && $barang->stock) {
-                $barang->stock->stock -= $barangHarian->jumlah_dikerjakan;
-                $barang->stock->save();
-            }
-        });
-    }
 }

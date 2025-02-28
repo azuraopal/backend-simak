@@ -217,7 +217,6 @@ class BarangController extends Controller
                     ->log("Stok barang '{$barang->nama}' berhasil ditambahkan oleh " . ($user->nama_lengkap ?: $user->email) . ".");
             }
 
-
             return response()->json([
                 'status' => true,
                 'message' => 'Stok barang berhasil ditambahkan',

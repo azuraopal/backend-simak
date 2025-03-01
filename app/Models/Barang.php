@@ -13,6 +13,8 @@ class Barang extends Model
 
     protected $table = 'barang';
 
+    protected $appends = ['kategori_nama', 'jumlah_stock'];
+
     protected $fillable = [
         'nama',
         'deskripsi',
@@ -34,6 +36,16 @@ class Barang extends Model
     public function kategori()
     {
         return $this->belongsTo(Kategori::class, 'kategori_barang', 'id');
+    }
+
+    public function getKategoriNamaAttribute()
+    {
+        return $this->kategori?->nama_kategori;
+    }
+
+    public function getStockJumlahAttribute()
+    {
+        return $this->stock?->stock;
     }
 
     public function getShortDescriptionAttribute()

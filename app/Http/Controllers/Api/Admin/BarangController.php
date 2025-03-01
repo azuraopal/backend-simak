@@ -14,7 +14,16 @@ class BarangController extends Controller
 {
     public function index()
     {
-        $barang = Barang::all();
+        $barang = Barang::with(['kategori', 'stock'])->get()->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'nama' => $item->nama,
+                'deskripsi' => $item->deskripsi,
+                'kategori' => $item->kategori_nama,
+                'stok' => $item->stock_jumlah,
+                'upah' => $item->upah,
+            ];
+        });
 
         if ($barang->isEmpty()) {
             return response()->json([
@@ -30,6 +39,7 @@ class BarangController extends Controller
             'data' => $barang,
         ], 200);
     }
+
 
     public function store(Request $request)
     {

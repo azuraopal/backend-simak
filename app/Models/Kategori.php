@@ -15,4 +15,10 @@ class Kategori extends Model
         'nama',
         'deskripsi',
     ];
+
+    public function getNamaKategoriAttribute()
+    {
+        return $this->nama;
+    }
+
 }

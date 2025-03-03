@@ -7,7 +7,6 @@ use App\Models\Barang;
 use App\Models\Stock;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class BarangController extends Controller

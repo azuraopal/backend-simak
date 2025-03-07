@@ -45,7 +45,7 @@ class Barang extends Model
 
     public function getJumlahStockAttribute()
     {
-        return $this->stock?->stock;
+        return $this->stock? $this->stock->stock : 0;
     }
 
     public function getShortDescriptionAttribute()

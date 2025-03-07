@@ -43,7 +43,7 @@ class Barang extends Model
         return $this->kategori?->nama_kategori;
     }
 
-    public function getStockJumlahAttribute()
+    public function getJumlahStockAttribute()
     {
         return $this->stock?->stock;
     }

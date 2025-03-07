@@ -341,6 +341,14 @@ class BarangController extends Controller
     public function destroy(Request $request, $id)
     {
         $barang = Barang::findOrFail($id);
+
+        if ($barang->stock > 0) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Barang tidak bisa dihapus karena masih memiliki stok',
+            ], 400);
+        }
+
         $barang->delete();
 
         $user = $request->user();

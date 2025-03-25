@@ -25,7 +25,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users/change-password', [UserController::class, 'changePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
-
 });
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
@@ -133,8 +132,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::get('/print-all', [LaporanUpahController::class, 'printAll'])->name('laporan-upah.print-all');
         Route::post('/print-filtered', [LaporanUpahController::class, 'printFiltered'])->name('laporan-upah.print-filtered');
     });
-
-
 });
 
 Route::prefix('staff-administrasi')->middleware(['auth:sanctum', 'staff', 'log.activity'])->group(function () {

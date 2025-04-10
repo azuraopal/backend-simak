@@ -21,10 +21,10 @@ Route::post('/users/forgot-password/send-code', [ForgotPasswordController::class
 Route::post('/users/forgot-password/reset', [ForgotPasswordController::class, 'resetPassword']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/users/upload-photo', [UserController::class, 'uploadPhoto']);
-    Route::post('/users/change-password', [UserController::class, 'changePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
+    Route::post('/users/upload-photo', [UserController::class, 'uploadPhoto']);
+    Route::post('/users/change-password', [UserController::class, 'changePassword']);
 });
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {

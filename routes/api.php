@@ -115,6 +115,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::post('/', [BarangHarianController::class, 'store'])->name('barang-harian.store');
         Route::put('/{id}', [BarangHarianController::class, 'update'])->name('barang-harian.update');
         Route::delete('/{id}', [BarangHarianController::class, 'destroy'])->name('barang-harian.destroy');
+        Route::post('/{id}/approve', [BarangHarianController::class, 'approve'])->name('barang-harian.approve');
+        Route::post('/{id}/reject', [BarangHarianController::class, 'reject'])->name('barang-harian.reject');
     });
 
     Route::prefix('stock')->group(function () {
@@ -138,44 +140,71 @@ Route::prefix('staff-administrasi')->middleware(['auth:sanctum', 'staff', 'log.a
 
     Route::prefix('users')->group(function () {
         Route::post('/register/staff-produksi', [UserController::class, 'store'])
-            ->name('staff.users.registerStaffProduksi');
+            ->name('staff-administrasi.users.registerStaffProduksi');
     });
 
     Route::prefix('kategori')->group(function () {
-        Route::post('/', [KategoriController::class, 'store'])->name('staff.kategori.store');
-        Route::get('/', [KategoriController::class, 'index'])->name('staff.kategori.index');
-        Route::put('/{id}', [KategoriController::class, 'update'])->name('staff.kategori.update');
-        Route::get('/{id}', [KategoriController::class, 'show'])->name('staff.kategori.show');
+        Route::post('/', [KategoriController::class, 'store'])->name('staff-administrasi.kategori.store');
+        Route::get('/', [KategoriController::class, 'index'])->name('staff-administrasi.kategori.index');
+        Route::put('/{id}', [KategoriController::class, 'update'])->name('staff-administrasi.kategori.update');
+        Route::get('/{id}', [KategoriController::class, 'show'])->name('staff-administrasi.kategori.show');
     });
 
     Route::prefix('staff-produksi')->group(function () {
-        Route::post('/', [StaffProduksiController::class, 'store'])->name('staff.StaffProduksi.store');
-        Route::get('/', [StaffProduksiController::class, 'index'])->name('staff.StaffProduksi.index');
-        Route::put('/{id}', [StaffProduksiController::class, 'update'])->name('staff.StaffProduksi.update');
-        Route::get('/{id}', [StaffProduksiController::class, 'show'])->name('staff.StaffProduksi.show');
+        Route::post('/', [StaffProduksiController::class, 'store'])->name('staff-administrasi.store');
+        Route::get('/', [StaffProduksiController::class, 'index'])->name('staff-administrasi.index');
+        Route::put('/{id}', [StaffProduksiController::class, 'update'])->name('staff-administrasi.update');
+        Route::get('/{id}', [StaffProduksiController::class, 'show'])->name('staff-administrasi.show');
     });
 
     Route::prefix('upah')->group(function () {
-        Route::post('/', [UpahController::class, 'store'])->name('staff.upah.store');
-        Route::get('/{id}', [UpahController::class, 'show'])->name('staff.upah.show');
-        Route::get('/', [UpahController::class, 'index'])->name('staff.upah.index');
+        Route::post('/', [UpahController::class, 'store'])->name('staff-administrasi.upah.store');
+        Route::get('/{id}', [UpahController::class, 'show'])->name('staff-administrasi.upah.show');
+        Route::get('/', [UpahController::class, 'index'])->name('staff-administrasi.upah.index');
     });
 
     Route::prefix('barang')->group(function () {
-        Route::post('/', [BarangController::class, 'store'])->name('staff.barang.store');
-        Route::get('/', [BarangController::class, 'index'])->name('staff.barang.index');
-        Route::put('/{id}', [BarangController::class, 'update'])->name('staff.barang.update');
-        Route::post('/{id}', [BarangController::class, 'show'])->name('staff.barang.show');
+        Route::post('/', [BarangController::class, 'store'])->name('staff-administrasi.barang.store');
+        Route::get('/', [BarangController::class, 'index'])->name('staff-administrasi.barang.index');
+        Route::put('/{id}', [BarangController::class, 'update'])->name('staff-administrasi.barang.update');
+        Route::post('/{id}', [BarangController::class, 'show'])->name('staff-administrasi.barang.show');
     });
 
     Route::prefix('barang-harian')->group(function () {
-        Route::post('/', [BarangHarianController::class, 'store'])->name('staff.barang-harian.store');
-        Route::get('/', [BarangHarianController::class, 'index'])->name('staff.barang-harian.index');
-        Route::put('/{id}', [BarangHarianController::class, 'update'])->name('staff.barang-harian.update');
-        Route::get('/{id}', [BarangHarianController::class, 'show'])->name('staff.barang-harian.show');
+        Route::post('/', [BarangHarianController::class, 'store'])->name('staff-administrasi.barang-harian.store');
+        Route::get('/', [BarangHarianController::class, 'index'])->name('staff-administrasi.barang-harian.index');
+        Route::put('/{id}', [BarangHarianController::class, 'update'])->name('staff-administrasi.barang-harian.update');
+        Route::get('/{id}', [BarangHarianController::class, 'show'])->name('staff-administrasi.barang-harian.show');
+        Route::post('/{id}/approve', [BarangHarianController::class, 'approve'])->name('staff-administrasi.barang-harian.approve');
+        Route::post('/{id}/reject', [BarangHarianController::class, 'reject'])->name('staff-administrasi.barang-harian.reject');
     });
 
     Route::prefix('stock')->group(function () {
-        Route::post('/{id}', [BarangController::class, 'addStock'])->name('staff.stock.add');
+        Route::post('/{id}', [BarangController::class, 'addStock'])->name('staff-administrasi.stock.add');
     });
+});
+
+Route::prefix('staff-produksi')->middleware(['auth:sanctum', 'log.activity'])->group(function () {
+
+    Route::prefix('barang')->group(function () {
+        Route::get('/', [BarangController::class, 'index'])->name('staff-produksi.barang.index');
+        Route::get('/{id}', [BarangController::class, 'show'])->name('staff-produksi.barang.show');
+    });
+
+    Route::prefix('upah')->group(function () {
+        Route::get('/', [UpahController::class, 'indexSelf'])->name('staff-produksi.upah.index');
+        Route::get('/{id}', [UpahController::class, 'showSelf'])->name('staff-produksi.upah.show');
+    });
+
+    Route::prefix('barang-harian')->group(function () {
+        Route::get('/', [BarangHarianController::class, 'indexSelf'])->name('staff-produksi.barang-harian.index');
+        Route::get('/{id}', [BarangHarianController::class, 'showSelf'])->name('staff-produksi.barang-harian.show');
+        Route::post('/pengajuan', [BarangHarianController::class, 'pengajuanStore'])->name('staff-produksi.barang-harian.pengajuan.store');
+    });
+
+    Route::prefix('kategori')->group(function () {
+        Route::get('/', [KategoriController::class, 'index'])->name('staff-produksi.kategori.index');
+        Route::get('/{id}', [KategoriController::class, 'show'])->name('staff-produksi.kategori.show');
+    });
+
 });

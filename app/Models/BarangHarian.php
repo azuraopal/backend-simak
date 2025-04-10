@@ -12,7 +12,10 @@ class BarangHarian extends Model
         'staff_produksi_id',
         'barang_id',
         'tanggal',
-        'jumlah_dikerjakan'
+        'jumlah_dikerjakan',
+        'status',
+        'tanggal_pengajuan',
+        'tanggal_pengeluaran',
     ];
 
     public function barang()

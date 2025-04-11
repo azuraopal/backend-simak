@@ -82,6 +82,67 @@ class UpahController extends Controller
         }
     }
 
+    public function indexSelf()
+    {
+        try {
+            $staffProduksi = StaffProduksi::where('users_id', Auth::id())->first();
+
+            if (!$staffProduksi) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data Staff Produksi tidak ditemukan'
+                ], 404);
+            }
+
+            $upahList = Upah::with(['staffProduksi.user:id,nama_lengkap,email,created_at'])
+                ->where('staff_produksi_id', $staffProduksi->id)
+                ->orderBy('periode_mulai', 'desc')
+                ->get();
+
+            if ($upahList->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data upah tidak ditemukan',
+                ], 404);
+            }
+
+            $upahList = $upahList->map(function ($upah) {
+                $detailPerhitungan = DB::table('barang_harian as bh')
+                    ->join('barang as b', 'b.id', '=', 'bh.barang_id')
+                    ->where('bh.staff_produksi_id', $upah->staff_produksi_id)
+                    ->whereBetween('bh.tanggal', [$upah->periode_mulai, $upah->periode_selesai])
+                    ->select(
+                        'b.nama as nama_barang',
+                        'b.upah as upah_per_kodi',
+                        'bh.tanggal',
+                        'bh.jumlah_dikerjakan',
+                        DB::raw('(bh.jumlah_dikerjakan * b.upah) as subtotal')
+                    )
+                    ->orderBy('bh.tanggal')
+                    ->get();
+
+                return [
+                    'id' => $upah->id,
+                    'staff_produksi' => $upah->staffProduksi,
+                    'minggu_ke' => $upah->minggu_ke,
+                    'total_dikerjakan' => $upah->total_dikerjakan,
+                    'total_upah' => $upah->total_upah,
+                    'periode_mulai' => $upah->periode_mulai,
+                    'periode_selesai' => $upah->periode_selesai,
+                    'detail_perhitungan' => $detailPerhitungan
+                ];
+            });
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Data upah berhasil diambil',
+                'data' => $upahList
+            ], 200);
+        } catch (\Exception $e) {
+            return $this->handleException($e);
+        }
+    }
+
     public function store(Request $request)
     {
         if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
@@ -273,6 +334,73 @@ class UpahController extends Controller
             ], 500);
         }
     }
+
+    public function showSelfUpah()
+    {
+        try {
+            $user = Auth::user();
+
+            if ($user->role !== UserRole::StaffProduksi) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
+
+            $staff_produksi = StaffProduksi::where('users_id', $user->id)->first();
+
+            if (!$staff_produksi) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data Staff Produksi tidak ditemukan'
+                ], 404);
+            }
+
+            $upahs = Upah::with(['staffProduksi.user'])
+                ->where('staff_produksi_id', $staff_produksi->id)
+                ->get();
+
+            $data = $upahs->map(function ($upah) {
+                $detailPerhitungan = $upah->detailPerhitungan()
+                    ->whereDate('barang_harian.tanggal', '>=', $upah->periode_mulai)
+                    ->whereDate('barang_harian.tanggal', '<=', $upah->periode_selesai)
+                    ->get()
+                    ->map(function ($item) {
+                        return [
+                            'nama_barang' => $item->nama_barang,
+                            'upah_per_kodi' => $item->upah_per_kodi,
+                            'tanggal' => $item->tanggal,
+                            'jumlah_dikerjakan' => $item->jumlah_dikerjakan,
+                            'subtotal' => $item->jumlah_dikerjakan * $item->upah_per_kodi
+                        ];
+                    });
+
+                return [
+                    'upah' => $upah,
+                    'detail_perhitungan' => $detailPerhitungan,
+                    'periode' => [
+                        'minggu_ke' => $upah->minggu_ke,
+                        'tanggal_mulai' => $upah->periode_mulai->format('Y-m-d'),
+                        'tanggal_selesai' => $upah->periode_selesai->format('Y-m-d')
+                    ]
+                ];
+            });
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Data upah berhasil diambil',
+                'data' => $data
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat mengambil data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 
     public function destroy($id)
     {

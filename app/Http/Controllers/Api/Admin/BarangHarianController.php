@@ -517,7 +517,6 @@ class BarangHarianController extends Controller
         ]);
     }
 
-
     public function approve(Request $request, $id)
     {
         if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {

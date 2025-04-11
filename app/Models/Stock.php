@@ -14,7 +14,7 @@ class Stock extends Model
 
     public function barang()
     {
-        return $this->hasOne(Barang::class, 'stock_id', 'id');
+        return $this->belongsTo(Barang::class, 'id', 'stock_id');
     }
 
     public function reduceStock($amount)

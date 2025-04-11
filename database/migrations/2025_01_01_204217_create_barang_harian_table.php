@@ -30,6 +30,7 @@ return new class extends Migration {
             $table->enum('status', ['Menunggu', 'Disetujui', 'Ditolak'])->default('Menunggu');
             $table->timestamp('tanggal_pengajuan')->nullable();
             $table->timestamp('tanggal_pengeluaran')->nullable();
+            $table->string('alasan_penolakan')->nullable();
         });
     }
 

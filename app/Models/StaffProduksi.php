@@ -42,7 +42,7 @@ class StaffProduksi extends Model
             'pekerjaan' => $data['pekerjaan'],
             'alamat' => $data['alamat'],
             'telepon' => $user->nomor_hp,
-            'email' => $user->email, 
+            'email' => $user->email,
         ]);
     }
 
@@ -59,5 +59,10 @@ class StaffProduksi extends Model
     public function setTanggalLahirAttribute($value)
     {
         $this->attributes['tanggal_lahir'] = Carbon::createFromFormat('d-m-Y', $value)->format('Y-m-d');
+    }
+
+    public function barangHarian()
+    {
+        return $this->hasMany(BarangHarian::class, 'staff_produksi_id');
     }
 }

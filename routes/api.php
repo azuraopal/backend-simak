@@ -175,6 +175,7 @@ Route::prefix('staff-administrasi')->middleware(['auth:sanctum', 'staff', 'log.a
         Route::get('/', [BarangHarianController::class, 'index'])->name('staff-administrasi.barang-harian.index');
         Route::put('/{id}', [BarangHarianController::class, 'update'])->name('staff-administrasi.barang-harian.update');
         Route::get('/{id}', [BarangHarianController::class, 'show'])->name('staff-administrasi.barang-harian.show');
+        Route::get('/pengajuan/list', [BarangHarianController::class, 'pendingList'])->name('staff-administrasi.barang-harian.pendinglist');
         Route::post('/{id}/approve', [BarangHarianController::class, 'approve'])->name('staff-administrasi.barang-harian.approve');
         Route::post('/{id}/reject', [BarangHarianController::class, 'reject'])->name('staff-administrasi.barang-harian.reject');
     });

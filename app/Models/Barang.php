@@ -30,7 +30,7 @@ class Barang extends Model
 
     public function stock()
     {
-        return $this->hasOne(Stock::class, 'id', 'stock_id');
+        return $this->belongsTo(Stock::class, 'stock_id', 'id');
     }
 
     public function kategori()

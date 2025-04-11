@@ -16,6 +16,7 @@ class BarangHarian extends Model
         'status',
         'tanggal_pengajuan',
         'tanggal_pengeluaran',
+        'alasan_penolakan',
     ];
 
     public function barang()

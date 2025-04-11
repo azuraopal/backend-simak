@@ -119,10 +119,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::post('/{id}/reject', [BarangHarianController::class, 'reject'])->name('barang-harian.reject');
     });
 
-    Route::prefix('stock')->group(function () {
-        Route::post('/{id}', [BarangController::class, 'addStock'])->name('admin.stock.add');
-    });
-
     Route::prefix('laporan-barang')->group(function () {
         Route::get('/barang', [LaporanBarangController::class, 'generateLaporanBarang']);
         Route::get('/ringkasan-barang', [LaporanBarangController::class, 'ringkasanPergerakanBarang']);
@@ -134,6 +130,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::get('/print-all', [LaporanUpahController::class, 'printAll'])->name('laporan-upah.print-all');
         Route::post('/print-filtered', [LaporanUpahController::class, 'printFiltered'])->name('laporan-upah.print-filtered');
     });
+
+    Route::prefix('stock')->group(function () {
+        Route::post('/{id}', [BarangController::class, 'addStock'])->name('admin.stock.add');
+    });
+
 });
 
 Route::prefix('staff-administrasi')->middleware(['auth:sanctum', 'staff', 'log.activity'])->group(function () {

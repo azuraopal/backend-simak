@@ -671,5 +671,4 @@ class BarangHarianController extends Controller
             ], 500);
         }
     }
-
 }

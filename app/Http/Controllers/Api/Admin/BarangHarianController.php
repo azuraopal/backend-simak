@@ -620,4 +620,56 @@ class BarangHarianController extends Controller
             return $this->handleException($e);
         }
     }
+
+    public function history()
+    {
+        try {
+            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
+
+            $riwayat = DB::table('barang_harian')
+                ->join('barang', 'barang_harian.barang_id', '=', 'barang.id')
+                ->join('staff_produksi', 'barang_harian.staff_produksi_id', '=', 'staff_produksi.id')
+                ->join('users', 'staff_produksi.users_id', '=', 'users.id')
+                ->whereIn('barang_harian.status', ['Disetujui', 'Ditolak'])
+                ->orderBy('barang_harian.updated_at', 'desc')
+                ->select(
+                    'barang_harian.id',
+                    'barang.nama as nama_barang',
+                    'barang_harian.jumlah_dikerjakan',
+                    'barang_harian.status',
+                    'barang_harian.updated_at',
+                    'barang_harian.alasan_penolakan',
+                    'users.nama_lengkap as diproses_oleh'
+                )
+                ->get();
+
+            $data = $riwayat->map(fn($item) => [
+                'id' => $item->id,
+                'barang' => $item->nama_barang,
+                'jumlah_dikerjakan' => $item->jumlah_dikerjakan,
+                'status' => $item->status,
+                'alasan_penolakan' => $item->alasan_penolakan,
+                'tanggal' => date('Y-m-d H:i:s', strtotime($item->updated_at)),
+                'diproses_oleh' => $item->diproses_oleh,
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Riwayat disetujui dan ditolak berhasil diambil.',
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat mengambil data riwayat.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }

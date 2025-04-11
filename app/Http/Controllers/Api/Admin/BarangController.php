@@ -19,7 +19,7 @@ class BarangController extends Controller
                 'nama' => $item->nama,
                 'deskripsi' => $item->deskripsi,
                 'kategori' => $item->kategori_nama,
-                'stok' => $item->stock_jumlah,
+                'stok' => $item->jumlah_stock,
                 'upah' => $item->upah,
             ];
         });
@@ -38,7 +38,6 @@ class BarangController extends Controller
             'data' => $barang,
         ], 200);
     }
-
 
     public function store(Request $request)
     {
@@ -102,6 +101,47 @@ class BarangController extends Controller
             ], 500);
         }
     }
+
+    public function show(Request $request, $id)
+    {
+        $validator = Validator::make(['id' => $id], [
+            'id' => 'required|integer|exists:barang,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation Error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $barang = Barang::with(['kategori', 'stock'])->find($id);
+
+        if (!$barang) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Barang tidak ditemukan',
+                'data' => [],
+            ], 404);
+        }
+
+        $data = [
+            'id' => $barang->id,
+            'nama' => $barang->nama,
+            'deskripsi' => $barang->deskripsi,
+            'kategori' => $barang->kategori_nama,
+            'stok' => $barang->jumlah_stock,
+            'upah' => $barang->upah,
+        ];
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Detail barang berhasil diambil',
+            'data' => $data,
+        ], 200);
+    }
+
 
     public function update(Request $request, $id)
     {

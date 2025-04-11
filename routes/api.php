@@ -115,8 +115,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::post('/', [BarangHarianController::class, 'store'])->name('barang-harian.store');
         Route::put('/{id}', [BarangHarianController::class, 'update'])->name('barang-harian.update');
         Route::delete('/{id}', [BarangHarianController::class, 'destroy'])->name('barang-harian.destroy');
+        Route::get('/pengajuan/list', [BarangHarianController::class, 'pendingList'])->name('barang-harian.pendinglist');
         Route::post('/{id}/approve', [BarangHarianController::class, 'approve'])->name('barang-harian.approve');
         Route::post('/{id}/reject', [BarangHarianController::class, 'reject'])->name('barang-harian.reject');
+        Route::post('/pengajuan/history', [BarangHarianController::class, 'history'])->name('barang-harian.history');
     });
 
     Route::prefix('laporan-barang')->group(function () {
@@ -179,6 +181,7 @@ Route::prefix('staff-administrasi')->middleware(['auth:sanctum', 'staff', 'log.a
         Route::get('/pengajuan/list', [BarangHarianController::class, 'pendingList'])->name('staff-administrasi.barang-harian.pendinglist');
         Route::post('/{id}/approve', [BarangHarianController::class, 'approve'])->name('staff-administrasi.barang-harian.approve');
         Route::post('/{id}/reject', [BarangHarianController::class, 'reject'])->name('staff-administrasi.barang-harian.reject');
+        Route::post('/pengajuan/history', [BarangHarianController::class, 'history'])->name('staff-administrasi.barang-harian.history');
     });
 
     Route::prefix('stock')->group(function () {

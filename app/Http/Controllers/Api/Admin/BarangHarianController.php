@@ -72,10 +72,21 @@ class BarangHarianController extends Controller
                 ], 404);
             }
 
-            $barangHarian = BarangHarian::with(['barang', 'staff_produksi.user'])
+            $barangHarian = BarangHarian::with('barang')
                 ->where('staff_produksi_id', $staffProduksi->id)
                 ->orderBy('tanggal', 'desc')
-                ->get();
+                ->get()
+                ->map(fn($item) => [
+                    'id' => $item->id,
+                    'nama_barang' => $item->barang->nama ?? '-',
+                    'tanggal' => $item->tanggal,
+                    'jumlah_dikerjakan' => $item->jumlah_dikerjakan,
+                    'status' => $item->status,
+                    'status_pekerjaan' => $item->status === 'Disetujui' ?
+                        ($item->tanggal_pengeluaran ? 'Beres' : 'Sedang Dikerjakan') : '-',
+                    'alasan_penolakan' => $item->alasan_penolakan ?? '-',
+                    'updated_at' => $item->updated_at
+                ]);
 
             if ($barangHarian->isEmpty()) {
                 return response()->json([
@@ -341,7 +352,7 @@ class BarangHarianController extends Controller
         }
     }
 
-    public function showSelf()
+    public function showSelf($id)
     {
         try {
             $user = Auth::user();
@@ -353,9 +364,9 @@ class BarangHarianController extends Controller
                 ], 403);
             }
 
-            $staff_produksi = StaffProduksi::where('users_id', $user->id)->first();
+            $staffProduksi = StaffProduksi::where('users_id', $user->id)->first();
 
-            if (!$staff_produksi) {
+            if (!$staffProduksi) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Data Staff Produksi tidak ditemukan'
@@ -363,15 +374,21 @@ class BarangHarianController extends Controller
             }
 
             $barangHarian = BarangHarian::with(['barang', 'staff_produksi.user'])
-                ->where('staff_produksi_id', $staff_produksi->id)
-                ->get();
+                ->where('staff_produksi_id', $staffProduksi->id)
+                ->find($id);
+
+            if (!$barangHarian) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Data barang harian tidak ditemukan'
+                ], 404);
+            }
 
             return response()->json([
                 'status' => true,
                 'message' => 'Data barang harian berhasil diambil',
                 'data' => $barangHarian
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -380,7 +397,6 @@ class BarangHarianController extends Controller
             ], 500);
         }
     }
-
 
     public function destroy(Request $request, $id)
     {
@@ -528,20 +544,21 @@ class BarangHarianController extends Controller
 
         try {
             return DB::transaction(function () use ($request, $id) {
-                $barangHarian = BarangHarian::where('status', 'Menunggu')
-                    ->findOrFail($id);
+                $barangHarian = BarangHarian::where('status', 'Menunggu')->findOrFail($id);
 
                 $barang = Barang::with([
                     'stock' => function ($query) {
                         $query->lockForUpdate();
                     }
                 ])->findOrFail($barangHarian->barang_id);
+
                 if (!$barang->stock) {
                     return response()->json([
                         'status' => false,
                         'message' => 'Barang tidak ditemukan atau stock belum diatur'
                     ], 404);
                 }
+
                 if ($barang->stock->stock < $barangHarian->jumlah_dikerjakan) {
                     return response()->json([
                         'status' => false,
@@ -553,6 +570,7 @@ class BarangHarianController extends Controller
 
                 $barangHarian->update([
                     'status' => 'Disetujui',
+                    'status_pekerjaan' => 'Sedang Dikerjakan',
                     'tanggal_pengeluaran' => now()
                 ]);
 
@@ -571,6 +589,7 @@ class BarangHarianController extends Controller
             return $this->handleException($e);
         }
     }
+
     public function reject(Request $request, $id)
     {
         if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
@@ -618,6 +637,41 @@ class BarangHarianController extends Controller
 
         } catch (\Exception $e) {
             return $this->handleException($e);
+        }
+    }
+
+    public function tandaiBeres($id)
+    {
+        try {
+            $barang = BarangHarian::findOrFail($id);
+
+            if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unauthorized'
+                ], 403);
+            }
+
+            if ($barang->status !== 'Disetujui' || $barang->status_pekerjaan !== 'Sedang Dikerjakan') {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Pekerjaan tidak valid untuk ditandai Beres.'
+                ]);
+            }
+
+            $barang->status_pekerjaan = 'Beres';
+            $barang->save();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Pekerjaan telah ditandai sebagai Beres.'
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal menandai pekerjaan',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 

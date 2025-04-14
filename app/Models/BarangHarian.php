@@ -14,6 +14,7 @@ class BarangHarian extends Model
         'tanggal',
         'jumlah_dikerjakan',
         'status',
+        'status_pekerjaan',
         'tanggal_pengajuan',
         'tanggal_pengeluaran',
         'alasan_penolakan',

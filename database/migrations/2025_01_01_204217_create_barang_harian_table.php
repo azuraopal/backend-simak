@@ -28,6 +28,7 @@ return new class extends Migration {
             $table->index(['staff_produksi_id', 'tanggal']);
             $table->index(['barang_id', 'tanggal']);
             $table->enum('status', ['Menunggu', 'Disetujui', 'Ditolak'])->default('Menunggu');
+            $table->enum('status_pekerjaan', ['Sedang Dikerjakan', 'Beres', 'Belum Beres']);
             $table->timestamp('tanggal_pengajuan')->nullable();
             $table->timestamp('tanggal_pengeluaran')->nullable();
             $table->string('alasan_penolakan')->nullable();

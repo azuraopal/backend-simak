@@ -118,6 +118,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::get('/pengajuan/list', [BarangHarianController::class, 'pendingList'])->name('barang-harian.pendinglist');
         Route::post('/{id}/approve', [BarangHarianController::class, 'approve'])->name('barang-harian.approve');
         Route::post('/{id}/reject', [BarangHarianController::class, 'reject'])->name('barang-harian.reject');
+        Route::post('/{id}/tandai-beres', [BarangHarianController::class, 'tandaiBeres'])->name('barang-harian.tandaiberes');
         Route::post('/pengajuan/history', [BarangHarianController::class, 'history'])->name('barang-harian.history');
     });
 
@@ -202,7 +203,7 @@ Route::prefix('staff-produksi')->middleware(['auth:sanctum', 'log.activity'])->g
     });
 
     Route::prefix('barang-harian')->group(function () {
-        Route::get('/', [BarangHarianController::class, 'indexSelf'])->name('staff-produksi.barang-harian.index');
+        Route::get('/', [BarangHarianController::class, 'indexSelf'])->name('staff-produksi.barang-harian.indexself');
         Route::get('/{id}', [BarangHarianController::class, 'showSelf'])->name('staff-produksi.barang-harian.show');
         Route::post('/pengajuan', [BarangHarianController::class, 'pengajuanStore'])->name('staff-produksi.barang-harian.pengajuan.store');
     });

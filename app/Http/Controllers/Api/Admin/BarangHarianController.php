@@ -7,11 +7,14 @@ use App\Models\Barang;
 use App\Models\BarangHarian;
 use App\Models\StaffProduksi;
 use App\Models\Stock;
+use App\Models\User;
+use App\Notifications\PengajuanBarangNotification;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 
 class BarangHarianController extends Controller
@@ -500,6 +503,10 @@ class BarangHarianController extends Controller
                 'status' => 'Menunggu',
                 'tanggal_pengajuan' => now()
             ]);
+
+            $penerimaNotifikasi = User::whereIn('role', [UserRole::Admin, UserRole::StaffAdministrasi])->get();
+
+            Notification::send($penerimaNotifikasi, new PengajuanBarangNotification($barangHarian));
 
             return response()->json([
                 'status' => true,

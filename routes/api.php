@@ -2,6 +2,7 @@
 use App\Enums\UserRole;
 use App\Http\Controllers\Api\Admin\LaporanBarangController;
 use App\Http\Controllers\Api\Admin\LaporanUpahController;
+use App\Http\Controllers\Api\Admin\NotifikasiController;
 use App\Http\Controllers\Api\ForgotPasswordController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
@@ -138,6 +139,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::post('/{id}', [BarangController::class, 'addStock'])->name('admin.stock.add');
     });
 
+    Route::prefix('notifikasi')->group(function () {
+        Route::get('/', [NotifikasiController::class, 'index'])->name('admin.notifikasi.index');
+        Route::post('/{id}', [NotifikasiController::class, 'read'])->name('admin.notifikasi.read');
+    });
 });
 
 Route::prefix('staff-administrasi')->middleware(['auth:sanctum', 'staff', 'log.activity'])->group(function () {
@@ -187,6 +192,11 @@ Route::prefix('staff-administrasi')->middleware(['auth:sanctum', 'staff', 'log.a
 
     Route::prefix('stock')->group(function () {
         Route::post('/{id}', [BarangController::class, 'addStock'])->name('staff-administrasi.stock.add');
+    });
+
+    Route::prefix('notifikasi')->group(function () {
+        Route::get('/', [NotifikasiController::class, 'index'])->name('staff-administrasi.notifikasi.index');
+        Route::post('/{id}', [NotifikasiController::class, 'read'])->name('staff-administrasi.notifikasi.read');
     });
 });
 

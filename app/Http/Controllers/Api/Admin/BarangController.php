@@ -211,6 +211,27 @@ class BarangController extends Controller
         }
     }
 
+    public function getTotalStockFromBarang()
+    {
+        try {
+            $barangs = Barang::with('stock')->get();
+
+            $totalStock = $barangs->sum(fn($barang) => $barang->stock->stock ?? 0);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Total stok dari semua barang berhasil dijumlahkan',
+                'total_stok' => $totalStock,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal mengambil stok',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function addStock(Request $request, $id)
     {
         if (!$this->isAdminOrStaff($request)) {

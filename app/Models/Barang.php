@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
 class Barang extends Model
 {
+    use SoftDeletes;
+
     use LogsActivity;
 
     protected $table = 'barang';
@@ -45,7 +48,7 @@ class Barang extends Model
 
     public function getJumlahStockAttribute()
     {
-        return $this->stock? $this->stock->stock : 0;
+        return $this->stock ? $this->stock->stock : 0;
     }
 
     public function getShortDescriptionAttribute()

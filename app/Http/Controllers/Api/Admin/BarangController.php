@@ -13,16 +13,14 @@ class BarangController extends Controller
 {
     public function index()
     {
-        $barang = Barang::with(['kategori', 'stock'])->get()->map(function ($item) {
-            return [
-                'id' => $item->id,
-                'nama' => $item->nama,
-                'deskripsi' => $item->deskripsi,
-                'kategori' => $item->kategori_nama,
-                'stok' => $item->jumlah_stock,
-                'upah' => $item->upah,
-            ];
-        });
+        $barang = Barang::with(['kategori', 'stock'])->get()->map(fn($item) => [
+            'id' => $item->id,
+            'nama' => $item->nama,
+            'deskripsi' => $item->deskripsi,
+            'kategori' => $item->kategori_nama,
+            'stok' => $item->jumlah_stock,
+            'upah' => $item->upah,
+        ]);
 
         if ($barang->isEmpty()) {
             return response()->json([
@@ -211,6 +209,31 @@ class BarangController extends Controller
         }
     }
 
+    public function destroy(Request $request, $id)
+    {
+        $barang = Barang::findOrFail($id);
+
+        if ($barang->stock > 0) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Barang tidak bisa dihapus karena masih memiliki stok',
+            ], 400);
+        }
+
+        $barang->delete();
+
+        $user = $request->user();
+
+        activity()
+            ->causedBy(auth()->user())
+            ->log("Menghapus barang: {$barang->nama} oleh " . ($user->nama_lengkap ?: $user->email) . ".");
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Data barang berhasil dihapus',
+        ], 200);
+    }
+
     public function getTotalStockFromBarang()
     {
         try {
@@ -397,30 +420,5 @@ class BarangController extends Controller
     {
         $role = $request->user()->role;
         return in_array($role->value, ['Admin', 'Staff']);
-    }
-
-    public function destroy(Request $request, $id)
-    {
-        $barang = Barang::findOrFail($id);
-
-        if ($barang->stock > 0) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Barang tidak bisa dihapus karena masih memiliki stok',
-            ], 400);
-        }
-
-        $barang->delete();
-
-        $user = $request->user();
-
-        activity()
-            ->causedBy(auth()->user())
-            ->log("Menghapus barang: {$barang->nama} oleh " . ($user->nama_lengkap ?: $user->email) . ".");
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Data barang berhasil dihapus',
-        ], 200);
     }
 }

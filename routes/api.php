@@ -136,6 +136,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     });
 
     Route::prefix('stock')->group(function () {
+        Route::get('/total-stock', [BarangController::class, 'getTotalStockFromBarang'])->name('admin.stock.gerTotalStockFromBarang');
         Route::post('/{id}', [BarangController::class, 'addStock'])->name('admin.stock.add');
     });
 
@@ -191,6 +192,7 @@ Route::prefix('staff-administrasi')->middleware(['auth:sanctum', 'staff', 'log.a
     });
 
     Route::prefix('stock')->group(function () {
+        Route::get('/total-stock', [BarangController::class, 'getTotalStockFromBarang'])->name('staff-administrasi.stock.gerTotalStockFromBarang');
         Route::post('/{id}', [BarangController::class, 'addStock'])->name('staff-administrasi.stock.add');
     });
 
@@ -223,4 +225,7 @@ Route::prefix('staff-produksi')->middleware(['auth:sanctum', 'log.activity'])->g
         Route::get('/{id}', [KategoriController::class, 'show'])->name('staff-produksi.kategori.show');
     });
 
+    Route::prefix('stock')->group(function(){
+        Route::get('/total-stock', [BarangController::class, 'getTotalStockFromBarang'])->name('staff-produksi.stock.gerTotalStockFromBarang');
+    });
 });

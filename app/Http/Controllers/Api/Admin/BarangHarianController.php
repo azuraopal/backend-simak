@@ -225,7 +225,7 @@ class BarangHarianController extends Controller
 
     public function update(Request $request, $id)
     {
-        if (Auth::user()->role !== UserRole::Admin) {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized access'

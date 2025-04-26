@@ -7,6 +7,7 @@ use App\Models\Barang;
 use App\Models\Stock;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class BarangController extends Controller
@@ -143,10 +144,10 @@ class BarangController extends Controller
 
     public function update(Request $request, $id)
     {
-        if (!$this->isAdminOrStaff($request)) {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
-                'message' => 'Unauthorized. Only Admin or Staff can perform this action.',
+                'message' => 'Unauthorized access'
             ], 403);
         }
 
@@ -211,6 +212,13 @@ class BarangController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized access'
+            ], 403);
+        }
+
         $barang = Barang::findOrFail($id);
 
         if ($barang->stock > 0) {
@@ -257,10 +265,10 @@ class BarangController extends Controller
 
     public function addStock(Request $request, $id)
     {
-        if (!$this->isAdminOrStaff($request)) {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
-                'message' => 'Unauthorized. Only Admin or Staff can perform this action.',
+                'message' => 'Unauthorized access'
             ], 403);
         }
 
@@ -331,10 +339,10 @@ class BarangController extends Controller
 
     public function reduceStock(Request $request, $id)
     {
-        if (!$this->isAdminOrStaff($request)) {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
-                'message' => 'Unauthorized. Only Admin or Staff can perform this action.',
+                'message' => 'Unauthorized access'
             ], 403);
         }
 

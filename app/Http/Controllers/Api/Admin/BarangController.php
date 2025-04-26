@@ -427,6 +427,6 @@ class BarangController extends Controller
     private function isAdminOrStaff($request): bool
     {
         $role = $request->user()->role;
-        return in_array($role->value, ['Admin', 'Staff']);
+        return in_array($role->value, ['Admin', 'StaffProduksi']);
     }
 }

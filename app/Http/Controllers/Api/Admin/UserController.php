@@ -311,15 +311,18 @@ class UserController extends Controller
             Storage::delete("public/{$user->foto_profile}");
         }
 
-        $fileName = uniqid() . '.' . $request->foto_profile->extension();
-        $request->foto_profile->storeAs('public/profile_photos', $fileName);
+        $path = $request->file('foto_profile')->store('public/profile_photos');
+        $fileName = str_replace('public/', '', $path);
 
-        $user->foto_profile = "profile_photos/{$fileName}";
+        $user->foto_profile = $fileName;
         $user->save();
 
         return response()->json([
+            'success' => true,
             'message' => 'Foto profil berhasil diunggah',
-            'foto_profile_url' => asset("storage/{$user->foto_profile}"),
+            'data' => [
+                'foto_profile_url' => asset("storage/{$fileName}")
+            ]
         ]);
     }
 

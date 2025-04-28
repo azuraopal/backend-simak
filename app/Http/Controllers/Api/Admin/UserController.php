@@ -299,32 +299,35 @@ class UserController extends Controller
             return response()->json(['message' => 'User tidak ditemukan'], 404);
         }
     }
+
     public function uploadPhoto(Request $request)
     {
-        $request->validate([
-            'foto_profile' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        $validator = Validator::make($request->all(), [
+            'foto_profile' => 'required|string',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
         $user = $request->user();
 
-        if ($user->foto_profile && Storage::exists("public/{$user->foto_profile}")) {
-            Storage::delete("public/{$user->foto_profile}");
-        }
-
-        $path = $request->file('foto_profile')->store('public/profile_photos');
-        $fileName = str_replace('public/', '', $path);
-
-        $user->foto_profile = $fileName;
+        $user->foto_profile = $request->foto_profile;
         $user->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Foto profil berhasil diunggah',
+            'message' => 'Foto profil berhasil diupdate',
             'data' => [
-                'foto_profile_url' => asset("storage/{$fileName}")
+                'foto_profile_url' => $user->foto_profile
             ]
         ]);
     }
+
 
     public function changePassword(Request $request)
     {

@@ -31,6 +31,11 @@ class Upah extends Model
         return $this->belongsTo(StaffProduksi::class, 'staff_produksi_id');
     }
 
+    public function staff_produksi()
+    {
+        return $this->belongsTo(StaffProduksi::class, 'staff_produksi_id');
+    }
+
     public function detailPerhitungan()
     {
         return $this->hasMany(BarangHarian::class, 'staff_produksi_id', 'staff_produksi_id')

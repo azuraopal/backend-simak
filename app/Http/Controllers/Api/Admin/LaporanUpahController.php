@@ -14,7 +14,7 @@ class LaporanUpahController extends Controller
 {
     public function printAll()
     {
-        if (Auth::user()->role !== UserRole::Admin) {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized access'
@@ -40,7 +40,7 @@ class LaporanUpahController extends Controller
 
     public function printFiltered(Request $request)
     {
-        if (Auth::user()->role !== UserRole::Admin) {
+        if (!in_array(Auth::user()->role, [UserRole::Admin, UserRole::StaffAdministrasi])) {
             return response()->json([
                 'status' => false,
                 'message' => 'Unauthorized access'
